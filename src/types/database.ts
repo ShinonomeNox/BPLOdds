@@ -31,6 +31,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["teams"]["Insert"]>;
+        Relationships: [];
       };
       players: {
         Row: {
@@ -48,6 +49,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["players"]["Insert"]>;
+        Relationships: [];
       };
       songs: {
         Row: {
@@ -65,6 +67,7 @@ export interface Database {
           level?: number | null;
         };
         Update: Partial<Database["public"]["Tables"]["songs"]["Insert"]>;
+        Relationships: [];
       };
       player_legacy_stats: {
         Row: {
@@ -88,6 +91,7 @@ export interface Database {
         Update: Partial<
           Database["public"]["Tables"]["player_legacy_stats"]["Insert"]
         >;
+        Relationships: [];
       };
       users: {
         Row: {
@@ -109,6 +113,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["users"]["Insert"]>;
+        Relationships: [];
       };
       coin_logs: {
         Row: {
@@ -128,6 +133,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["coin_logs"]["Insert"]>;
+        Relationships: [];
       };
       matches: {
         Row: {
@@ -149,6 +155,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["matches"]["Insert"]>;
+        Relationships: [];
       };
       tag_battle_songs: {
         Row: {
@@ -168,6 +175,7 @@ export interface Database {
         Update: Partial<
           Database["public"]["Tables"]["tag_battle_songs"]["Insert"]
         >;
+        Relationships: [];
       };
       match_participants: {
         Row: {
@@ -185,6 +193,7 @@ export interface Database {
         Update: Partial<
           Database["public"]["Tables"]["match_participants"]["Insert"]
         >;
+        Relationships: [];
       };
       song_results: {
         Row: {
@@ -204,6 +213,7 @@ export interface Database {
         Update: Partial<
           Database["public"]["Tables"]["song_results"]["Insert"]
         >;
+        Relationships: [];
       };
       bet_types: {
         Row: {
@@ -223,6 +233,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["bet_types"]["Insert"]>;
+        Relationships: [];
       };
       bet_options: {
         Row: {
@@ -246,6 +257,7 @@ export interface Database {
         Update: Partial<
           Database["public"]["Tables"]["bet_options"]["Insert"]
         >;
+        Relationships: [];
       };
       bets: {
         Row: {
@@ -267,6 +279,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["bets"]["Insert"]>;
+        Relationships: [];
       };
     };
     Views: {
@@ -280,6 +293,7 @@ export interface Database {
           avg_raw_score: number | null;
           best_score: number | null;
         };
+        Relationships: [];
       };
       player_theme_stats: {
         Row: {
@@ -288,7 +302,9 @@ export interface Database {
           plays: number;
           wins: number;
         };
+        Relationships: [];
       };
     };
+    Functions: Record<string, never>;
   };
 }
