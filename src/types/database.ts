@@ -8,8 +8,10 @@ export type TeamSide = "a" | "b";
 export type CoinLogType =
   | "initial"
   | "login_bonus"
+  | "share_bonus"
   | "bet"
   | "payout"
+  | "yell_donation"
   | "admin_adjust";
 export type PayoutStatus = "pending" | "won" | "lost";
 export type LegacyStatCategoryType = "theme" | "level";
@@ -100,7 +102,9 @@ export interface Database {
           password_hash: string;
           coins: number;
           last_login_bonus_date: string | null;
+          last_share_bonus_date: string | null;
           registered_ip: string | null;
+          is_admin: boolean;
           created_at: string;
         };
         Insert: {
@@ -109,7 +113,9 @@ export interface Database {
           password_hash: string;
           coins?: number;
           last_login_bonus_date?: string | null;
+          last_share_bonus_date?: string | null;
           registered_ip?: string | null;
+          is_admin?: boolean;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["users"]["Insert"]>;
@@ -244,6 +250,8 @@ export interface Database {
           min_diff: number | null;
           max_diff: number | null;
           side: TeamSide | null;
+          player_id: string | null;
+          team_id: string | null;
         };
         Insert: {
           id?: string;
@@ -253,6 +261,8 @@ export interface Database {
           min_diff?: number | null;
           max_diff?: number | null;
           side?: TeamSide | null;
+          player_id?: string | null;
+          team_id?: string | null;
         };
         Update: Partial<
           Database["public"]["Tables"]["bet_options"]["Insert"]
@@ -279,6 +289,74 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["bets"]["Insert"]>;
+        Relationships: [];
+      };
+      player_yell_points: {
+        Row: {
+          player_id: string;
+          total_points: number;
+          updated_at: string;
+        };
+        Insert: {
+          player_id: string;
+          total_points?: number;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["player_yell_points"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      team_yell_points: {
+        Row: {
+          team_id: string;
+          total_points: number;
+          updated_at: string;
+        };
+        Insert: {
+          team_id: string;
+          total_points?: number;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["team_yell_points"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      yell_donations: {
+        Row: {
+          id: string;
+          user_id: string;
+          player_id: string | null;
+          team_id: string | null;
+          amount: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          player_id?: string | null;
+          team_id?: string | null;
+          amount: number;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["yell_donations"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      system_settings: {
+        Row: {
+          key: string;
+          value: string;
+        };
+        Insert: {
+          key: string;
+          value: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["system_settings"]["Insert"]
+        >;
         Relationships: [];
       };
     };

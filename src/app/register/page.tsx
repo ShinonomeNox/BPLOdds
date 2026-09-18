@@ -80,6 +80,7 @@ export default function RegisterPage() {
           登録する
         </button>
       </form>
+      <p className="text-xs text-gray-400">※非公式のファン企画です</p>
       <p className="text-xs text-gray-400">
         このサイトはreCAPTCHAによって保護されています。
       </p>

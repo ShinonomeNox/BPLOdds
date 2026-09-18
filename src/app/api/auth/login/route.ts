@@ -7,16 +7,13 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_DURATION_SECONDS,
 } from "@/lib/auth/session";
+import { getTodayDateString } from "@/lib/date/today";
 
 const LOGIN_BONUS_COINS = 20;
 
 interface LoginRequestBody {
   loginId?: unknown;
   password?: unknown;
-}
-
-function getTodayDateString(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 export async function POST(request: Request) {

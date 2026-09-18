@@ -45,7 +45,9 @@ create table users (
   password_hash text not null,          -- bcrypt
   coins integer not null default 200,   -- 初期付与は少なめ
   last_login_bonus_date date,
+  last_share_bonus_date date,           -- Xシェアボーナス（1日1回）
   registered_ip text,
+  is_admin boolean not null default false, -- 運営専用APIの実行権限
   created_at timestamptz not null default now()
 );
 
@@ -118,7 +120,9 @@ create table bet_options (
   label text not null,
   min_diff integer,
   max_diff integer,
-  side text                   -- 'a' / 'b' / null
+  side text,                  -- 'a' / 'b' / null
+  player_id uuid references players(id), -- 個人の勝敗に対応する場合のみ設定（エールポイント用、1vs1のみ）
+  team_id uuid references teams(id)      -- sideが対応するチーム（エールポイント用）
 );
 
 create table bets (
@@ -156,3 +160,41 @@ join match_participants mp on mp.id = sr.participant_id
 join tag_battle_songs tbs on tbs.id = sr.song_id
 join songs s on s.id = tbs.song_id
 group by mp.player_id, s.theme;
+
+-- ==== エールポイント機能（DESIGN_ADDENDUM.md参照） ====
+
+-- 選手ごとのエールポイント累積値
+create table player_yell_points (
+  player_id uuid primary key references players(id),
+  total_points bigint not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+-- チームごとのエールポイント累積値
+create table team_yell_points (
+  team_id uuid primary key references teams(id),
+  total_points bigint not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+-- 直接献上の履歴（コインシンク、選手・チームのどちらか一方に献上する）
+create table yell_donations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id),
+  player_id uuid references players(id),
+  team_id uuid references teams(id),
+  amount integer not null check (amount > 0), -- 消費したEC枚数
+  created_at timestamptz not null default now(),
+  constraint yell_donations_target_check check (
+    (player_id is not null and team_id is null) or
+    (player_id is null and team_id is not null)
+  )
+);
+
+-- 賭け金ボーナスの加算率など、コード変更なしで調整できる設定値
+create table system_settings (
+  key text primary key,
+  value text not null
+);
+insert into system_settings (key, value) values
+  ('yell_point_bet_bonus_rate', '0.1'); -- 10%。運営が数値だけ変更可能

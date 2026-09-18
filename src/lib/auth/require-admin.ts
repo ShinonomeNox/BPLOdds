@@ -1,16 +1,13 @@
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
 import { createServiceClient } from "@/lib/supabase/service";
-import { getTodayDateString } from "@/lib/date/today";
 
-export interface CurrentUser {
+export interface AdminUser {
   userId: string;
   loginId: string;
-  coins: number;
-  shareBonusAvailable: boolean;
 }
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export async function requireAdmin(): Promise<AdminUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) {
@@ -25,18 +22,13 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const supabase = createServiceClient();
   const { data: user, error } = await supabase
     .from("users")
-    .select("id, login_id, coins, last_share_bonus_date")
+    .select("is_admin")
     .eq("id", session.userId)
     .maybeSingle();
 
-  if (error || !user) {
+  if (error || !user || !user.is_admin) {
     return null;
   }
 
-  return {
-    userId: user.id,
-    loginId: user.login_id,
-    coins: user.coins,
-    shareBonusAvailable: user.last_share_bonus_date !== getTodayDateString(),
-  };
+  return { userId: session.userId, loginId: session.loginId };
 }

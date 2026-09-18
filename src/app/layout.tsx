@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BPLOdds",
-  description: "BEMANI PRO LEAGUE SEASON 6 勝敗予想サイト",
+  title: "BPエール",
+  description:
+    "BPエール（非公式ファンサイト） — BEMANI PRO LEAGUEの選手・チームをエールコインで応援しよう",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -28,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         {children}
+        <SiteFooter />
         {recaptchaSiteKey && (
           <Script
             src={`https://www.google.com/recaptcha/api.js?render=${recaptchaSiteKey}`}
