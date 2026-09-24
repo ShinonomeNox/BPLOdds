@@ -18,7 +18,7 @@ export default async function AdminTeamsPage() {
   const supabase = createServiceClient();
   const { data: teams } = await supabase
     .from("teams")
-    .select("id, name, game_title")
+    .select("id, name, game_title, color")
     .order("name");
 
   return (
@@ -42,8 +42,8 @@ export default async function AdminTeamsPage() {
 
         <BulkImportForm
           endpoint="/api/admin/teams/bulk"
-          helpText="1行に「チーム名, 機種(iidx/sdvx/ddr)」の形式で入力してください（スプレッドシートからのコピー貼り付け可）"
-          placeholder={"RENSAGE, iidx\nDIVER-SE, sdvx"}
+          helpText="1行に「チーム名, 機種(iidx/sdvx/ddr), カラー(#RRGGBB、任意)」の形式で入力してください（スプレッドシートからのコピー貼り付け可）"
+          placeholder={"RENSAGE, iidx, #1D4ED8\nDIVER-SE, sdvx"}
         />
 
         <section className="card-surface p-5 sm:p-6">

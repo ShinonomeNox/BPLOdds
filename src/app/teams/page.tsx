@@ -8,7 +8,7 @@ export default async function TeamsPage() {
   const supabase = createServiceClient();
   const { data: teams } = await supabase
     .from("teams")
-    .select("id, name, game_title")
+    .select("id, name, game_title, color")
     .order("name");
 
   return (
@@ -35,8 +35,19 @@ export default async function TeamsPage() {
                   <Link
                     key={team.id}
                     href={`/teams/${team.id}`}
-                    className="card-surface px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-cyan"
+                    className="card-surface flex items-center gap-2 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-cyan"
+                    style={
+                      team.color
+                        ? { borderLeft: `4px solid ${team.color}` }
+                        : undefined
+                    }
                   >
+                    {team.color && (
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: team.color }}
+                      />
+                    )}
                     {team.name}
                   </Link>
                 ))}

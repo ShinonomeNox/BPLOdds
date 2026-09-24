@@ -10,6 +10,7 @@ interface Team {
   id: string;
   name: string;
   game_title: GameTitle;
+  color: string | null;
 }
 
 export function TeamListItem({ team }: { team: Team }) {
@@ -17,6 +18,7 @@ export function TeamListItem({ team }: { team: Team }) {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(team.name);
   const [gameTitle, setGameTitle] = useState<GameTitle>(team.game_title);
+  const [color, setColor] = useState(team.color ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -27,7 +29,7 @@ export function TeamListItem({ team }: { team: Team }) {
       const res = await fetch(`/api/admin/teams/${team.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, gameTitle }),
+        body: JSON.stringify({ name, gameTitle, color: color || null }),
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
@@ -65,7 +67,7 @@ export function TeamListItem({ team }: { team: Team }) {
   if (isEditing) {
     return (
       <li className="flex flex-col gap-2 rounded-lg border border-border p-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="text"
             value={name}
@@ -83,6 +85,19 @@ export function TeamListItem({ team }: { team: Team }) {
               </option>
             ))}
           </select>
+          <input
+            type="text"
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            placeholder="#RRGGBB"
+            className="input-base w-28 py-1 text-sm"
+          />
+          {color && (
+            <span
+              className="h-6 w-6 rounded-full border border-border"
+              style={{ backgroundColor: color }}
+            />
+          )}
           <button
             type="button"
             onClick={handleSave}
@@ -106,7 +121,13 @@ export function TeamListItem({ team }: { team: Team }) {
 
   return (
     <li className="flex items-center justify-between gap-2 text-sm">
-      <span>
+      <span className="flex items-center gap-2">
+        {team.color && (
+          <span
+            className="h-3 w-3 rounded-full"
+            style={{ backgroundColor: team.color }}
+          />
+        )}
         {team.name}（{team.game_title.toUpperCase()}）
       </span>
       <span className="flex gap-2">

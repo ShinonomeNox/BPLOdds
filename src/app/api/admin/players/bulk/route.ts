@@ -4,6 +4,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { parseBulkRows, type BulkRowError } from "@/lib/admin/parse-bulk-text";
 import type { GameTitle } from "@/types/database";
 
+const GAME_TITLES: GameTitle[] = ["iidx", "sdvx", "ddr"];
+
 interface BulkRequestBody {
   text?: unknown;
 }
@@ -35,31 +37,46 @@ export async function POST(request: Request) {
     );
   }
 
-  const teamByName = new Map(teams.map((t) => [t.name, t]));
+  // 同じチーム名でも機種ごとに別レコードのため、"チーム名|機種"のキーで解決する
+  const teamByKey = new Map(
+    teams.map((t) => [`${t.name}|${t.game_title}`, t]),
+  );
   const rows = parseBulkRows(text);
   const validRows: { name: string; team_id: string; game_title: GameTitle }[] =
     [];
   const errors: BulkRowError[] = [];
 
   rows.forEach((row, index) => {
-    const [name, teamName] = row;
-    if (!name) {
-      errors.push({ line: index + 1, message: "選手名がありません" });
-      return;
-    }
+    const [teamName, gameTitleRaw, name] = row;
     if (!teamName) {
       errors.push({ line: index + 1, message: "チーム名がありません" });
       return;
     }
-    const team = teamByName.get(teamName);
-    if (!team) {
+    const gameTitle = (gameTitleRaw ?? "").toLowerCase();
+    if (!GAME_TITLES.includes(gameTitle as GameTitle)) {
       errors.push({
         line: index + 1,
-        message: `チーム「${teamName}」が見つかりません`,
+        message: "機種はiidx/sdvx/ddrのいずれかで指定してください",
       });
       return;
     }
-    validRows.push({ name, team_id: team.id, game_title: team.game_title });
+    if (!name) {
+      errors.push({ line: index + 1, message: "選手名がありません" });
+      return;
+    }
+    const team = teamByKey.get(`${teamName}|${gameTitle}`);
+    if (!team) {
+      errors.push({
+        line: index + 1,
+        message: `チーム「${teamName}」（${gameTitle}）が見つかりません`,
+      });
+      return;
+    }
+    validRows.push({
+      name,
+      team_id: team.id,
+      game_title: team.game_title,
+    });
   });
 
   if (validRows.length === 0) {

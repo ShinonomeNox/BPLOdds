@@ -26,6 +26,17 @@ export const MATCH_FORMAT_GAME_TITLE: Record<MatchFormat, GameTitle> = {
   sdvx_megamix: "sdvx",
 };
 
+// 対戦カード一括インポート等、機種から対戦形式を自動判定したい場合のデフォルト。
+// DDR/SDVXはタッグ、IIDXはシングルを標準とする。
+export const DEFAULT_MATCH_FORMAT_BY_GAME_TITLE: Record<
+  GameTitle,
+  MatchFormat
+> = {
+  ddr: "ddr_tag",
+  sdvx: "sdvx_tag",
+  iidx: "iidx_standard",
+};
+
 export interface MatchBetTypeDef {
   typeKey: string;
   label: string;

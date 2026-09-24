@@ -5,6 +5,7 @@ import { parseBulkRows, type BulkRowError } from "@/lib/admin/parse-bulk-text";
 import type { GameTitle } from "@/types/database";
 
 const GAME_TITLES: GameTitle[] = ["iidx", "sdvx", "ddr"];
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 interface BulkRequestBody {
   text?: unknown;
@@ -26,11 +27,12 @@ export async function POST(request: Request) {
   }
 
   const rows = parseBulkRows(text);
-  const validRows: { name: string; game_title: GameTitle }[] = [];
+  const validRows: { name: string; game_title: GameTitle; color: string | null }[] =
+    [];
   const errors: BulkRowError[] = [];
 
   rows.forEach((row, index) => {
-    const [name, gameTitle] = row;
+    const [name, gameTitle, color] = row;
     if (!name) {
       errors.push({ line: index + 1, message: "チーム名がありません" });
       return;
@@ -42,7 +44,18 @@ export async function POST(request: Request) {
       });
       return;
     }
-    validRows.push({ name, game_title: gameTitle as GameTitle });
+    if (color && !HEX_COLOR_PATTERN.test(color)) {
+      errors.push({
+        line: index + 1,
+        message: "カラーは#RRGGBB形式で指定してください（任意項目）",
+      });
+      return;
+    }
+    validRows.push({
+      name,
+      game_title: gameTitle as GameTitle,
+      color: color || null,
+    });
   });
 
   if (validRows.length === 0) {

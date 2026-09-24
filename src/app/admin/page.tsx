@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createServiceClient } from "@/lib/supabase/service";
 import { CreateMatchForm } from "@/components/admin/create-match-form";
+import { MatchSheetImportForm } from "@/components/admin/match-sheet-import-form";
 import { StatusBadge } from "@/components/status-badge";
 
 const MASTER_LINKS = [
@@ -55,6 +56,13 @@ export default async function AdminPage() {
           試合を作成
         </h2>
         <CreateMatchForm teams={teams ?? []} />
+      </section>
+
+      <section className="card-surface mb-6 p-5 sm:p-6">
+        <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
+          対戦カード一括インポート
+        </h2>
+        <MatchSheetImportForm />
       </section>
 
       <section className="card-surface p-5 sm:p-6">

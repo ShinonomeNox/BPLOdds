@@ -7,6 +7,7 @@ create table teams (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   game_title text not null,   -- 'iidx' / 'sdvx' / 'ddr'
+  color text,                 -- チームカラー（HEXコード、例: '#1D4ED8'）
   created_at timestamptz not null default now()
 );
 
@@ -78,7 +79,9 @@ create table tag_battle_songs (
   match_id uuid not null references matches(id),
   song_id uuid references songs(id),
   song_number integer not null,
-  status text not null default 'open' -- open / closed / settled（曲ごとの締切）
+  status text not null default 'open', -- open / closed / settled（曲ごとの締切）
+  theme text,       -- 選曲発表前の予告テーマ（対戦カード表に記載される情報）
+  level_range text  -- 選曲発表前の予告レベル帯（例: '13-14'）
 );
 
 -- 出場選手（チーム・試合に対して）
@@ -199,6 +202,22 @@ create table system_settings (
 insert into system_settings (key, value) values
   ('yell_point_bet_bonus_rate', '0.1'); -- 10%。運営が数値だけ変更可能
 
+-- ==== ストラテジーカード機能 ====
+-- 各チームは機種ごとに2枚保有。相手の選曲を無効化し抽選で変更する効果を持つ
+-- （賭けの結果・配当には影響しない）。使用可能タイミングのルールは機種ごとに
+-- 異なり複雑なため（例: IIDXは4対戦中2種類まで、同ラウンドの重複は不可）、
+-- システムでの自動チェックは行わず、結果登録画面からの記録・サイトでの
+-- 見える化のみを行う（適合性の判断は運営の目視）。
+create table strategy_card_usages (
+  id uuid primary key default gen_random_uuid(),
+  team_id uuid not null references teams(id),        -- 使用したチーム（機種込みのレコード）
+  match_id uuid not null references matches(id),      -- 使用した試合
+  round_label text not null,                          -- 'シングルバトル' / 'タッグバトル' / '2nd' / '3rd' / '1st' / '4th' 等
+  target_song_id uuid references tag_battle_songs(id), -- 無効化した曲（分かれば任意）
+  note text,
+  created_at timestamptz not null default now()
+);
+
 -- ==== Realtime配信用のRLSポリシー ====
 -- matches / tag_battle_songs は誰でも閲覧できる公開情報のため、
 -- 読み取りのみを許可する。Supabase RealtimeはRLSで読み取りが
@@ -207,3 +226,4 @@ insert into system_settings (key, value) values
 -- それ以外のテーブルはService Role Key経由のサーバーサイドアクセスのみのため対象外。
 create policy "matches_public_read" on matches for select using (true);
 create policy "tag_battle_songs_public_read" on tag_battle_songs for select using (true);
+create policy "strategy_card_usages_public_read" on strategy_card_usages for select using (true);

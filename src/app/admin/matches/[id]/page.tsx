@@ -8,6 +8,8 @@ import { AddSongForm } from "@/components/admin/add-song-form";
 import { SongPanel } from "@/components/admin/song-panel";
 import { BetTypeSettlePanel } from "@/components/admin/bet-type-settle-panel";
 import { StatusBadge } from "@/components/status-badge";
+import { StrategyCardPanel } from "@/components/admin/strategy-card-panel";
+import { STRATEGY_CARD_LIMIT_PER_TEAM } from "@/lib/betting/strategy-cards";
 
 export default async function AdminMatchPage({
   params,
@@ -36,22 +38,46 @@ export default async function AdminMatchPage({
     notFound();
   }
 
-  const [{ data: participants }, { data: players }, { data: songs }] =
+  const [
+    { data: participants },
+    { data: players },
+    { data: songs },
+    { data: teamA },
+    { data: teamB },
+    { data: matchUsages },
+  ] = await Promise.all([
+    supabase
+      .from("match_participants")
+      .select("id, player_id, team_side")
+      .eq("match_id", matchId),
+    supabase
+      .from("players")
+      .select("id, name")
+      .eq("game_title", match.game_title)
+      .order("name"),
+    supabase
+      .from("tag_battle_songs")
+      .select("*")
+      .eq("match_id", matchId)
+      .order("song_number"),
+    supabase.from("teams").select("id, name").eq("id", match.team_a_id).single(),
+    supabase.from("teams").select("id, name").eq("id", match.team_b_id).single(),
+    supabase
+      .from("strategy_card_usages")
+      .select("id, team_id, round_label, target_song_id, note")
+      .eq("match_id", matchId),
+  ]);
+
+  const [{ count: teamAUsedCount }, { count: teamBUsedCount }] =
     await Promise.all([
       supabase
-        .from("match_participants")
-        .select("id, player_id, team_side")
-        .eq("match_id", matchId),
+        .from("strategy_card_usages")
+        .select("id", { count: "exact", head: true })
+        .eq("team_id", match.team_a_id),
       supabase
-        .from("players")
-        .select("id, name")
-        .eq("game_title", match.game_title)
-        .order("name"),
-      supabase
-        .from("tag_battle_songs")
-        .select("*")
-        .eq("match_id", matchId)
-        .order("song_number"),
+        .from("strategy_card_usages")
+        .select("id", { count: "exact", head: true })
+        .eq("team_id", match.team_b_id),
     ]);
 
   const matchBetTypes = await getBetTypesWithOptions(supabase, {
@@ -63,6 +89,18 @@ export default async function AdminMatchPage({
     ...p,
     playerName: playerNameById.get(p.player_id) ?? p.player_id,
   }));
+
+  const teamNameById = new Map(
+    [teamA, teamB]
+      .filter((t): t is { id: string; name: string } => !!t)
+      .map((t) => [t.id, t.name]),
+  );
+  const songLabelById = new Map(
+    (songs ?? []).map((s) => [
+      s.id,
+      `曲${s.song_number}${s.theme ? `　${s.theme}` : ""}`,
+    ]),
+  );
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
@@ -106,6 +144,41 @@ export default async function AdminMatchPage({
             />
           </div>
         </section>
+
+        <StrategyCardPanel
+          matchId={match.id}
+          gameTitle={match.game_title}
+          teams={[
+            {
+              id: match.team_a_id,
+              name: teamNameById.get(match.team_a_id) ?? "?",
+              side: "a",
+              usedCount: teamAUsedCount ?? 0,
+              limit: STRATEGY_CARD_LIMIT_PER_TEAM,
+            },
+            {
+              id: match.team_b_id,
+              name: teamNameById.get(match.team_b_id) ?? "?",
+              side: "b",
+              usedCount: teamBUsedCount ?? 0,
+              limit: STRATEGY_CARD_LIMIT_PER_TEAM,
+            },
+          ]}
+          songs={(songs ?? []).map((s) => ({
+            id: s.id,
+            label: songLabelById.get(s.id) ?? `曲${s.song_number}`,
+          }))}
+          usages={(matchUsages ?? []).map((u) => ({
+            id: u.id,
+            teamId: u.team_id,
+            teamName: teamNameById.get(u.team_id) ?? "?",
+            roundLabel: u.round_label,
+            targetSongLabel: u.target_song_id
+              ? (songLabelById.get(u.target_song_id) ?? null)
+              : null,
+            note: u.note,
+          }))}
+        />
 
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-bold tracking-wide text-accent-purple">

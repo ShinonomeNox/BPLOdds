@@ -47,8 +47,8 @@ export default async function AdminPlayersPage() {
 
         <BulkImportForm
           endpoint="/api/admin/players/bulk"
-          helpText="1行に「選手名, 所属チーム名」の形式で入力してください（チーム名は完全一致が必要です）"
-          placeholder={"DOLPHIN, RENSAGE\nAKITOSHI, DIVER-SE"}
+          helpText="1行に「所属チーム名, 機種(iidx/sdvx/ddr), 選手名」の形式で入力してください（チーム名は完全一致が必要です。同名チームでも機種ごとに別チームとして扱われます）"
+          placeholder={"APINA VRAMeS, iidx, UCCHIE\nAPINA VRAMeS, sdvx, MINATO"}
         />
 
         <section className="card-surface p-5 sm:p-6">

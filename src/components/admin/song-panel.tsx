@@ -17,6 +17,8 @@ interface Song {
   id: string;
   song_number: number;
   status: SongStatus;
+  theme: string | null;
+  level_range: string | null;
 }
 
 export async function SongPanel({
@@ -39,7 +41,9 @@ export async function SongPanel({
   return (
     <div className="card-surface flex flex-col gap-3 p-4 sm:p-5">
       <p className="font-medium text-foreground">
-        曲{song.song_number}（status: {song.status}）
+        曲{song.song_number}
+        {song.theme && `　${song.theme}`}
+        {song.level_range && `（Lv.${song.level_range}）`}（status: {song.status}）
       </p>
       <SongStatusButtons songId={song.id} currentStatus={song.status} />
 

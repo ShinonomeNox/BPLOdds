@@ -4,10 +4,12 @@ import { createServiceClient } from "@/lib/supabase/service";
 import type { GameTitle } from "@/types/database";
 
 const GAME_TITLES: GameTitle[] = ["iidx", "sdvx", "ddr"];
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 interface UpdateTeamRequestBody {
   name?: unknown;
   gameTitle?: unknown;
+  color?: unknown;
 }
 
 export async function PATCH(
@@ -21,9 +23,10 @@ export async function PATCH(
 
   const { id } = await params;
   const body = (await request.json()) as UpdateTeamRequestBody;
-  const { name, gameTitle } = body;
+  const { name, gameTitle, color } = body;
 
-  const update: { name?: string; game_title?: GameTitle } = {};
+  const update: { name?: string; game_title?: GameTitle; color?: string | null } =
+    {};
   if (name !== undefined) {
     if (typeof name !== "string" || name.trim().length === 0) {
       return NextResponse.json(
@@ -44,6 +47,15 @@ export async function PATCH(
       );
     }
     update.game_title = gameTitle as GameTitle;
+  }
+  if (color !== undefined) {
+    if (color !== null && (typeof color !== "string" || !HEX_COLOR_PATTERN.test(color))) {
+      return NextResponse.json(
+        { error: "colorは#RRGGBB形式で指定してください" },
+        { status: 400 },
+      );
+    }
+    update.color = color;
   }
 
   const supabase = createServiceClient();

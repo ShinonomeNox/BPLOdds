@@ -30,6 +30,7 @@ export default async function MatchPage({
     { data: teamB },
     { data: songs },
     { data: participants },
+    { data: strategyCardUsages },
   ] = await Promise.all([
     supabase.from("teams").select("name").eq("id", match.team_a_id).single(),
     supabase.from("teams").select("name").eq("id", match.team_b_id).single(),
@@ -42,7 +43,22 @@ export default async function MatchPage({
       .from("match_participants")
       .select("id, player_id, team_side")
       .eq("match_id", id),
+    supabase
+      .from("strategy_card_usages")
+      .select("id, team_id, round_label, target_song_id, note")
+      .eq("match_id", id),
   ]);
+
+  const teamNameById = new Map([
+    [match.team_a_id, teamA?.name ?? "?"],
+    [match.team_b_id, teamB?.name ?? "?"],
+  ]);
+  const songLabelById = new Map(
+    (songs ?? []).map((s) => [
+      s.id,
+      `曲${s.song_number}${s.theme ? `　${s.theme}` : ""}`,
+    ]),
+  );
 
   const [betTypes, user] = await Promise.all([
     getBetTypesWithOptions(supabase, { matchId: id }),
@@ -112,6 +128,24 @@ export default async function MatchPage({
             </ul>
           </div>
         )}
+
+        {(strategyCardUsages ?? []).length > 0 && (
+          <div className="mt-4 flex flex-col gap-1 border-t border-border pt-4">
+            <p className="text-sm font-semibold text-foreground">
+              ストラテジーカード使用
+            </p>
+            <ul className="flex flex-col gap-1 text-sm text-muted">
+              {(strategyCardUsages ?? []).map((usage) => (
+                <li key={usage.id}>
+                  {teamNameById.get(usage.team_id) ?? "?"}（{usage.round_label}）
+                  {usage.target_song_id &&
+                    ` — ${songLabelById.get(usage.target_song_id) ?? ""}`}
+                  {usage.note && ` / ${usage.note}`}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-4">
@@ -134,9 +168,13 @@ export default async function MatchPage({
         {(songs ?? []).map((song, index) => (
           <div key={song.id} className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <p className="font-semibold text-foreground">
-                曲{song.song_number}
-              </p>
+              <div>
+                <p className="font-semibold text-foreground">
+                  曲{song.song_number}
+                  {song.theme && `　${song.theme}`}
+                  {song.level_range && `（Lv.${song.level_range}）`}
+                </p>
+              </div>
               <SongRealtimeStatus
                 songId={song.id}
                 initialStatus={song.status}

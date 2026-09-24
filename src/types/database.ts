@@ -24,12 +24,14 @@ export interface Database {
           id: string;
           name: string;
           game_title: GameTitle;
+          color: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           name: string;
           game_title: GameTitle;
+          color?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["teams"]["Insert"]>;
@@ -170,6 +172,8 @@ export interface Database {
           song_id: string | null;
           song_number: number;
           status: SongStatus;
+          theme: string | null;
+          level_range: string | null;
         };
         Insert: {
           id?: string;
@@ -177,6 +181,8 @@ export interface Database {
           song_id?: string | null;
           song_number: number;
           status?: SongStatus;
+          theme?: string | null;
+          level_range?: string | null;
         };
         Update: Partial<
           Database["public"]["Tables"]["tag_battle_songs"]["Insert"]
@@ -356,6 +362,30 @@ export interface Database {
         };
         Update: Partial<
           Database["public"]["Tables"]["system_settings"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      strategy_card_usages: {
+        Row: {
+          id: string;
+          team_id: string;
+          match_id: string;
+          round_label: string;
+          target_song_id: string | null;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          match_id: string;
+          round_label: string;
+          target_song_id?: string | null;
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["strategy_card_usages"]["Insert"]
         >;
         Relationships: [];
       };

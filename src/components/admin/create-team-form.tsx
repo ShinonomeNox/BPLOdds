@@ -10,6 +10,7 @@ export function CreateTeamForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [gameTitle, setGameTitle] = useState<GameTitle>("iidx");
+  const [color, setColor] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -21,7 +22,7 @@ export function CreateTeamForm() {
       const res = await fetch("/api/admin/teams", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, gameTitle }),
+        body: JSON.stringify({ name, gameTitle, color: color || null }),
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
@@ -29,6 +30,7 @@ export function CreateTeamForm() {
         return;
       }
       setName("");
+      setColor("");
       router.refresh();
     } finally {
       setIsPending(false);
@@ -60,6 +62,16 @@ export function CreateTeamForm() {
             </option>
           ))}
         </select>
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-sm text-muted">チームカラー（任意）</span>
+        <input
+          type="text"
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+          placeholder="#1D4ED8"
+          className="input-base"
+        />
       </label>
       {error && <p className="text-sm text-danger">{error}</p>}
       <button
