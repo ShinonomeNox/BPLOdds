@@ -84,12 +84,12 @@ export function SubmitResultsForm({
   }
 
   if (participants.length === 0) {
-    return <p className="text-xs text-gray-400">出場選手が未登録です</p>;
+    return <p className="text-xs text-muted">出場選手が未登録です</p>;
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <p className="text-sm font-medium">結果入力</p>
+      <p className="text-sm font-medium text-foreground">結果入力</p>
       {participants.map((p) => (
         <div key={p.id} className="flex items-center gap-2 text-sm">
           <span className="w-32">{p.playerName}</span>
@@ -98,7 +98,7 @@ export function SubmitResultsForm({
             <input
               type="number"
               min={1}
-              className="w-16 rounded border px-2 py-1"
+              className="input-base w-16 py-1"
               value={ranks[p.id] ?? ""}
               onChange={(e) =>
                 setRanks((prev) => ({ ...prev, [p.id]: e.target.value }))
@@ -109,7 +109,7 @@ export function SubmitResultsForm({
             スコア
             <input
               type="number"
-              className="w-24 rounded border px-2 py-1"
+              className="input-base w-24 py-1"
               value={scores[p.id] ?? ""}
               onChange={(e) =>
                 setScores((prev) => ({ ...prev, [p.id]: e.target.value }))
@@ -118,11 +118,11 @@ export function SubmitResultsForm({
           </label>
         </div>
       ))}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       <button
         type="submit"
         disabled={isPending}
-        className="self-start rounded border border-black px-3 py-1.5 text-sm disabled:opacity-50"
+        className="self-start btn-secondary text-sm"
       >
         結果を登録
       </button>

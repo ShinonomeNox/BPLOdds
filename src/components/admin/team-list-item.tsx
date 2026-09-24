@@ -64,18 +64,18 @@ export function TeamListItem({ team }: { team: Team }) {
 
   if (isEditing) {
     return (
-      <li className="flex flex-col gap-2 rounded border p-2">
+      <li className="flex flex-col gap-2 rounded-lg border border-border p-2">
         <div className="flex items-center gap-2">
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="rounded border px-2 py-1 text-sm"
+            className="input-base py-1 text-sm"
           />
           <select
             value={gameTitle}
             onChange={(e) => setGameTitle(e.target.value as GameTitle)}
-            className="rounded border px-2 py-1 text-sm"
+            className="input-base py-1 text-sm"
           >
             {GAME_TITLES.map((title) => (
               <option key={title} value={title}>
@@ -87,19 +87,19 @@ export function TeamListItem({ team }: { team: Team }) {
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="rounded bg-black px-3 py-1 text-xs text-white disabled:opacity-50"
+            className="btn-primary text-xs"
           >
             保存
           </button>
           <button
             type="button"
             onClick={() => setIsEditing(false)}
-            className="rounded border px-3 py-1 text-xs"
+            className="btn-secondary text-xs"
           >
             キャンセル
           </button>
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
       </li>
     );
   }
@@ -113,7 +113,7 @@ export function TeamListItem({ team }: { team: Team }) {
         <button
           type="button"
           onClick={() => setIsEditing(true)}
-          className="text-xs underline"
+          className="text-xs text-accent-cyan underline"
         >
           編集
         </button>
@@ -121,7 +121,7 @@ export function TeamListItem({ team }: { team: Team }) {
           type="button"
           onClick={handleDelete}
           disabled={isPending}
-          className="text-xs text-red-600 underline disabled:opacity-50"
+          className="text-xs text-danger underline disabled:opacity-50"
         >
           削除
         </button>

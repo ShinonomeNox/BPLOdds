@@ -68,20 +68,20 @@ export function SongMasterListItem({ song }: { song: Song }) {
 
   if (isEditing) {
     return (
-      <li className="flex flex-col gap-2 rounded border p-2">
+      <li className="flex flex-col gap-2 rounded-lg border border-border p-2">
         <div className="flex flex-wrap items-center gap-2">
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="rounded border px-2 py-1 text-sm"
+            className="input-base py-1 text-sm"
           />
           <input
             type="text"
             value={theme}
             onChange={(e) => setTheme(e.target.value)}
             placeholder="テーマ"
-            className="rounded border px-2 py-1 text-sm"
+            className="input-base py-1 text-sm"
           />
           <input
             type="number"
@@ -89,25 +89,25 @@ export function SongMasterListItem({ song }: { song: Song }) {
             value={level}
             onChange={(e) => setLevel(e.target.value)}
             placeholder="レベル"
-            className="w-20 rounded border px-2 py-1 text-sm"
+            className="w-20 input-base py-1 text-sm"
           />
           <button
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="rounded bg-black px-3 py-1 text-xs text-white disabled:opacity-50"
+            className="btn-primary text-xs"
           >
             保存
           </button>
           <button
             type="button"
             onClick={() => setIsEditing(false)}
-            className="rounded border px-3 py-1 text-xs"
+            className="btn-secondary text-xs"
           >
             キャンセル
           </button>
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
       </li>
     );
   }
@@ -123,7 +123,7 @@ export function SongMasterListItem({ song }: { song: Song }) {
         <button
           type="button"
           onClick={() => setIsEditing(true)}
-          className="text-xs underline"
+          className="text-xs text-accent-cyan underline"
         >
           編集
         </button>
@@ -131,7 +131,7 @@ export function SongMasterListItem({ song }: { song: Song }) {
           type="button"
           onClick={handleDelete}
           disabled={isPending}
-          className="text-xs text-red-600 underline disabled:opacity-50"
+          className="text-xs text-danger underline disabled:opacity-50"
         >
           削除
         </button>

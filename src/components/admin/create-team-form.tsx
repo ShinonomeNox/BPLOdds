@@ -38,21 +38,21 @@ export function CreateTeamForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-sm">
       <label className="flex flex-col gap-1">
-        <span className="text-sm">チーム名</span>
+        <span className="text-sm text-muted">チーム名</span>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="rounded border px-3 py-2"
+          className="input-base"
         />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-sm">機種</span>
+        <span className="text-sm text-muted">機種</span>
         <select
           value={gameTitle}
           onChange={(e) => setGameTitle(e.target.value as GameTitle)}
-          className="rounded border px-3 py-2"
+          className="input-base"
         >
           {GAME_TITLES.map((title) => (
             <option key={title} value={title}>
@@ -61,11 +61,11 @@ export function CreateTeamForm() {
           ))}
         </select>
       </label>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       <button
         type="submit"
         disabled={isPending}
-        className="self-start rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
+        className="self-start btn-primary text-sm"
       >
         チームを作成
       </button>

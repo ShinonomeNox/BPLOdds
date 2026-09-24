@@ -45,7 +45,7 @@ export function DonateTeamForm({
 
   if (!isLoggedIn) {
     return (
-      <Link href="/login" className="text-sm underline">
+      <Link href="/login" className="text-sm text-accent-cyan underline">
         ログインしてエールを送る
       </Link>
     );
@@ -53,25 +53,25 @@ export function DonateTeamForm({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <input
           type="number"
           min={1}
           value={amount}
           onChange={(e) => setAmount(Number(e.target.value))}
-          className="w-24 rounded border px-2 py-1"
+          className="input-base w-24"
         />
-        <span className="text-xs text-gray-400">EC</span>
+        <span className="text-xs text-muted">EC</span>
         <button
           type="button"
           onClick={handleDonate}
           disabled={isPending}
-          className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
+          className="btn-primary text-sm"
         >
           エールを送る
         </button>
       </div>
-      {message && <p className="text-xs text-gray-500">{message}</p>}
+      {message && <p className="text-xs text-muted">{message}</p>}
     </div>
   );
 }

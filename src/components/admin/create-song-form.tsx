@@ -47,11 +47,11 @@ export function CreateSongForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-sm">
       <label className="flex flex-col gap-1">
-        <span className="text-sm">機種</span>
+        <span className="text-sm text-muted">機種</span>
         <select
           value={gameTitle}
           onChange={(e) => setGameTitle(e.target.value as GameTitle)}
-          className="rounded border px-3 py-2"
+          className="input-base"
         >
           {GAME_TITLES.map((title) => (
             <option key={title} value={title}>
@@ -61,39 +61,39 @@ export function CreateSongForm() {
         </select>
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-sm">曲名</span>
+        <span className="text-sm text-muted">曲名</span>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="rounded border px-3 py-2"
+          className="input-base"
         />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-sm">テーマ区分（任意）</span>
+        <span className="text-sm text-muted">テーマ区分（任意）</span>
         <input
           type="text"
           value={theme}
           onChange={(e) => setTheme(e.target.value)}
-          className="rounded border px-3 py-2"
+          className="input-base"
         />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-sm">難易度レベル（任意）</span>
+        <span className="text-sm text-muted">難易度レベル（任意）</span>
         <input
           type="number"
           step="0.1"
           value={level}
           onChange={(e) => setLevel(e.target.value)}
-          className="rounded border px-3 py-2"
+          className="input-base"
         />
       </label>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       <button
         type="submit"
         disabled={isPending}
-        className="self-start rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
+        className="self-start btn-primary text-sm"
       >
         課題曲を作成
       </button>

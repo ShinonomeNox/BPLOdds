@@ -36,41 +36,38 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex-1 flex flex-col items-center justify-center gap-6 p-8">
-      <h1 className="text-xl font-bold">ログイン</h1>
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-4"
-      >
-        <label className="flex flex-col gap-1">
-          <span className="text-sm">ログインID</span>
-          <input
-            type="text"
-            value={loginId}
-            onChange={(e) => setLoginId(e.target.value)}
-            required
-            className="rounded border px-3 py-2"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-sm">パスワード</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="rounded border px-3 py-2"
-          />
-        </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-        >
+    <main className="flex flex-1 flex-col items-center justify-center px-4 py-12">
+      <div className="card-surface w-full max-w-sm p-6 sm:p-8">
+        <h1 className="glow-text mb-6 text-center text-xl font-bold text-foreground">
           ログイン
-        </button>
-      </form>
+        </h1>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1">
+            <span className="text-sm text-muted">ログインID</span>
+            <input
+              type="text"
+              value={loginId}
+              onChange={(e) => setLoginId(e.target.value)}
+              required
+              className="input-base"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm text-muted">パスワード</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="input-base"
+            />
+          </label>
+          {error && <p className="text-sm text-danger">{error}</p>}
+          <button type="submit" disabled={isPending} className="btn-primary">
+            ログイン
+          </button>
+        </form>
+      </div>
     </main>
   );
 }

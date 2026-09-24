@@ -3,19 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { StatusBadge } from "@/components/status-badge";
 import type { MatchStatus } from "@/types/database";
-
-const STATUS_LABEL: Record<MatchStatus, string> = {
-  scheduled: "受付中",
-  live: "締切済み",
-  settled: "終了",
-};
-
-const STATUS_COLOR: Record<MatchStatus, string> = {
-  scheduled: "text-green-600",
-  live: "text-red-600",
-  settled: "text-gray-500",
-};
 
 export function MatchRealtimeStatus({
   matchId,
@@ -53,8 +42,8 @@ export function MatchRealtimeStatus({
   }, [matchId, router]);
 
   return (
-    <p className={`text-sm font-semibold ${STATUS_COLOR[status]}`}>
-      状態: {STATUS_LABEL[status]}
-    </p>
+    <div className="flex items-center gap-2 text-sm text-muted">
+      状態: <StatusBadge status={status} />
+    </div>
   );
 }

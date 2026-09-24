@@ -57,12 +57,12 @@ export function CreateLegacyStatForm({ players }: { players: Player[] }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-sm">
       <label className="flex flex-col gap-1">
-        <span className="text-sm">選手</span>
+        <span className="text-sm text-muted">選手</span>
         <select
           value={playerId}
           onChange={(e) => setPlayerId(e.target.value)}
           required
-          className="rounded border px-3 py-2"
+          className="input-base"
         >
           <option value="">選択してください</option>
           {players.map((player) => (
@@ -73,23 +73,23 @@ export function CreateLegacyStatForm({ players }: { players: Player[] }) {
         </select>
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-sm">シーズン（例: season5）</span>
+        <span className="text-sm text-muted">シーズン（例: season5）</span>
         <input
           type="text"
           value={season}
           onChange={(e) => setSeason(e.target.value)}
           required
-          className="rounded border px-3 py-2"
+          className="input-base"
         />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-sm">区分</span>
+        <span className="text-sm text-muted">区分</span>
         <select
           value={categoryType}
           onChange={(e) =>
             setCategoryType(e.target.value as LegacyStatCategoryType)
           }
-          className="rounded border px-3 py-2"
+          className="input-base"
         >
           {CATEGORY_TYPES.map((type) => (
             <option key={type} value={type}>
@@ -99,42 +99,42 @@ export function CreateLegacyStatForm({ players }: { players: Player[] }) {
         </select>
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-sm">区分値（テーマ名 or レベル値）</span>
+        <span className="text-sm text-muted">区分値（テーマ名 or レベル値）</span>
         <input
           type="text"
           value={categoryValue}
           onChange={(e) => setCategoryValue(e.target.value)}
           required
-          className="rounded border px-3 py-2"
+          className="input-base"
         />
       </label>
       <div className="flex gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-sm">勝利数</span>
+          <span className="text-sm text-muted">勝利数</span>
           <input
             type="number"
             min={0}
             value={wins}
             onChange={(e) => setWins(Number(e.target.value))}
-            className="w-24 rounded border px-3 py-2"
+            className="w-24 input-base"
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-sm">プレイ数</span>
+          <span className="text-sm text-muted">プレイ数</span>
           <input
             type="number"
             min={0}
             value={plays}
             onChange={(e) => setPlays(Number(e.target.value))}
-            className="w-24 rounded border px-3 py-2"
+            className="w-24 input-base"
           />
         </label>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       <button
         type="submit"
         disabled={isPending}
-        className="self-start rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
+        className="self-start btn-primary text-sm"
       >
         登録
       </button>

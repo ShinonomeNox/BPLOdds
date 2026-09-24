@@ -22,7 +22,7 @@ export function LogoutButton() {
       type="button"
       onClick={handleLogout}
       disabled={isPending}
-      className="rounded border border-black px-4 py-2 disabled:opacity-50"
+      className="btn-secondary text-sm"
     >
       ログアウト
     </button>

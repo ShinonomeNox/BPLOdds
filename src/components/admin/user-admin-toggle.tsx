@@ -42,11 +42,11 @@ export function UserAdminToggle({
         type="button"
         onClick={toggle}
         disabled={isPending || (isSelf && isAdmin)}
-        className="text-xs underline disabled:opacity-40"
+        className="text-xs text-accent-cyan underline disabled:opacity-40"
       >
         {isAdmin ? "管理者権限を外す" : "管理者にする"}
       </button>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && <span className="text-xs text-danger">{error}</span>}
     </span>
   );
 }

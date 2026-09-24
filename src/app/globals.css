@@ -1,26 +1,138 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #05070f;
+  --background-elevated: #0d1226;
+  --surface: #131a33;
+  --surface-hover: #1a2340;
+  --border: #2a3457;
+  --foreground: #e8ecf7;
+  --muted: #8b93b5;
+  --accent-cyan: #22d3ee;
+  --accent-pink: #f637b8;
+  --accent-purple: #a855f7;
+  --success: #34e89e;
+  --danger: #ff4d6d;
+  --warning: #fbbf24;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-background-elevated: var(--background-elevated);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-pink: var(--accent-pink);
+  --color-accent-purple: var(--accent-purple);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: radial-gradient(
+      circle at 15% 0%,
+      color-mix(in srgb, var(--accent-purple) 16%, transparent),
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 85% 20%,
+      color-mix(in srgb, var(--accent-cyan) 14%, transparent),
+      transparent 45%
+    ),
+    var(--background);
+  color: var(--foreground);
+  min-height: 100dvh;
 }
 
-body {
-  background: var(--background);
+::selection {
+  background: var(--accent-cyan);
+  color: #05070f;
+}
+
+.glow-text {
+  text-shadow:
+    0 0 12px color-mix(in srgb, var(--accent-cyan) 55%, transparent),
+    0 0 28px color-mix(in srgb, var(--accent-purple) 35%, transparent);
+}
+
+.card-surface {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  backdrop-filter: blur(6px);
+}
+
+.input-base {
+  background: var(--background-elevated);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  padding: 0.6rem 0.9rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input-base:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-cyan) 25%, transparent);
+}
+
+.btn-primary {
+  background: linear-gradient(
+    135deg,
+    var(--accent-cyan),
+    var(--accent-purple)
+  );
+  color: #05070f;
+  font-weight: 700;
+  border-radius: 0.6rem;
+  padding: 0.65rem 1.4rem;
+  transition: filter 0.15s ease, transform 0.1s ease;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent-cyan) 35%, transparent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 0.65rem 1.4rem;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--accent-cyan);
+  background: color-mix(in srgb, var(--accent-cyan) 8%, transparent);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  color: var(--danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+  text-shadow: 0 0 8px color-mix(in srgb, var(--danger) 60%, transparent);
 }

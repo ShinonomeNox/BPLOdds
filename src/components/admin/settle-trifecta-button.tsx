@@ -41,11 +41,11 @@ export function SettleTrifectaButton({ songId }: { songId: string }) {
         type="button"
         onClick={handleSettle}
         disabled={isPending}
-        className="self-start rounded border border-black px-3 py-1.5 text-sm disabled:opacity-50"
+        className="self-start btn-secondary text-sm"
       >
         3連単を精算（登録済みの結果から自動判定）
       </button>
-      {result && <p className="text-sm text-gray-600">{result}</p>}
+      {result && <p className="text-sm text-muted">{result}</p>}
     </div>
   );
 }

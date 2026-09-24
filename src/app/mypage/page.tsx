@@ -79,117 +79,140 @@ export default async function MyPage() {
   const teamNameById = new Map((donatedTeams ?? []).map((t) => [t.id, t.name]));
 
   return (
-    <main className="flex-1 p-8 max-w-2xl mx-auto w-full flex flex-col gap-8">
-      <div>
-        <h1 className="text-xl font-bold">マイページ</h1>
-        <p className="text-sm text-gray-500">
-          {user.loginId} さん / 所持エールコイン: {user.coins} EC
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
+      <div className="card-surface mb-6 p-5 sm:p-6">
+        <h1 className="glow-text text-xl font-bold text-foreground sm:text-2xl">
+          マイページ
+        </h1>
+        <p className="mt-1 text-sm text-muted">
+          {user.loginId} さん / 所持エールコイン:{" "}
+          <span className="font-bold text-accent-cyan">{user.coins}</span> EC
         </p>
       </div>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="font-semibold">エール履歴</h2>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-gray-500">
-              <th className="pb-1">対象</th>
-              <th className="pb-1">枚数</th>
-              <th className="pb-1">状態</th>
-              <th className="pb-1">還元</th>
-              <th className="pb-1">日時</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(bets ?? []).map((bet) => (
-              <tr key={bet.id} className="border-t">
-                <td className="py-1">
-                  {optionLabelById.get(bet.bet_option_id) ?? "-"}
-                </td>
-                <td className="py-1">{bet.amount} EC</td>
-                <td className="py-1">
-                  {PAYOUT_STATUS_LABEL[bet.payout_status]}
-                </td>
-                <td className="py-1">{bet.payout_amount ?? "-"}</td>
-                <td className="py-1 text-xs text-gray-400">
-                  {new Date(bet.created_at).toLocaleString("ja-JP")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {(bets ?? []).length === 0 && (
-          <p className="text-sm text-gray-400">
-            エール送信履歴はまだありません
-          </p>
-        )}
-      </section>
+      <div className="flex flex-col gap-4">
+        <section className="card-surface p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
+            エール履歴
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[480px] text-sm">
+              <thead>
+                <tr className="text-left text-muted">
+                  <th className="pb-2 font-medium">対象</th>
+                  <th className="pb-2 font-medium">枚数</th>
+                  <th className="pb-2 font-medium">状態</th>
+                  <th className="pb-2 font-medium">還元</th>
+                  <th className="pb-2 font-medium">日時</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(bets ?? []).map((bet) => (
+                  <tr key={bet.id} className="border-t border-border">
+                    <td className="py-2 text-foreground">
+                      {optionLabelById.get(bet.bet_option_id) ?? "-"}
+                    </td>
+                    <td className="py-2 text-foreground">{bet.amount} EC</td>
+                    <td className="py-2 text-foreground">
+                      {PAYOUT_STATUS_LABEL[bet.payout_status]}
+                    </td>
+                    <td className="py-2 text-foreground">
+                      {bet.payout_amount ?? "-"}
+                    </td>
+                    <td className="py-2 text-xs text-muted">
+                      {new Date(bet.created_at).toLocaleString("ja-JP")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {(bets ?? []).length === 0 && (
+            <p className="text-sm text-muted">
+              エール送信履歴はまだありません
+            </p>
+          )}
+        </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="font-semibold">直エール送信履歴</h2>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-gray-500">
-              <th className="pb-1">対象</th>
-              <th className="pb-1">枚数</th>
-              <th className="pb-1">日時</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(donations ?? []).map((donation) => (
-              <tr key={donation.id} className="border-t">
-                <td className="py-1">
-                  {donation.player_id
-                    ? (playerNameById.get(donation.player_id) ?? "-")
-                    : (teamNameById.get(donation.team_id ?? "") ?? "-")}
-                </td>
-                <td className="py-1">{donation.amount} EC</td>
-                <td className="py-1 text-xs text-gray-400">
-                  {new Date(donation.created_at).toLocaleString("ja-JP")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {(donations ?? []).length === 0 && (
-          <p className="text-sm text-gray-400">
-            直エールの送信履歴はまだありません
-          </p>
-        )}
-      </section>
+        <section className="card-surface p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
+            直エール送信履歴
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[360px] text-sm">
+              <thead>
+                <tr className="text-left text-muted">
+                  <th className="pb-2 font-medium">対象</th>
+                  <th className="pb-2 font-medium">枚数</th>
+                  <th className="pb-2 font-medium">日時</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(donations ?? []).map((donation) => (
+                  <tr key={donation.id} className="border-t border-border">
+                    <td className="py-2 text-foreground">
+                      {donation.player_id
+                        ? (playerNameById.get(donation.player_id) ?? "-")
+                        : (teamNameById.get(donation.team_id ?? "") ?? "-")}
+                    </td>
+                    <td className="py-2 text-foreground">
+                      {donation.amount} EC
+                    </td>
+                    <td className="py-2 text-xs text-muted">
+                      {new Date(donation.created_at).toLocaleString("ja-JP")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {(donations ?? []).length === 0 && (
+            <p className="text-sm text-muted">
+              直エールの送信履歴はまだありません
+            </p>
+          )}
+        </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="font-semibold">コイン増減履歴</h2>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-gray-500">
-              <th className="pb-1">種別</th>
-              <th className="pb-1">増減</th>
-              <th className="pb-1">日時</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(coinLogs ?? []).map((log) => (
-              <tr key={log.id} className="border-t">
-                <td className="py-1">
-                  {COIN_LOG_TYPE_LABEL[log.type] ?? log.type}
-                </td>
-                <td
-                  className={`py-1 ${log.amount >= 0 ? "text-green-600" : "text-red-600"}`}
-                >
-                  {log.amount >= 0 ? "+" : ""}
-                  {log.amount} EC
-                </td>
-                <td className="py-1 text-xs text-gray-400">
-                  {new Date(log.created_at).toLocaleString("ja-JP")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {(coinLogs ?? []).length === 0 && (
-          <p className="text-sm text-gray-400">履歴はまだありません</p>
-        )}
-      </section>
+        <section className="card-surface p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
+            コイン増減履歴
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[360px] text-sm">
+              <thead>
+                <tr className="text-left text-muted">
+                  <th className="pb-2 font-medium">種別</th>
+                  <th className="pb-2 font-medium">増減</th>
+                  <th className="pb-2 font-medium">日時</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(coinLogs ?? []).map((log) => (
+                  <tr key={log.id} className="border-t border-border">
+                    <td className="py-2 text-foreground">
+                      {COIN_LOG_TYPE_LABEL[log.type] ?? log.type}
+                    </td>
+                    <td
+                      className={`py-2 font-semibold ${
+                        log.amount >= 0 ? "text-success" : "text-danger"
+                      }`}
+                    >
+                      {log.amount >= 0 ? "+" : ""}
+                      {log.amount} EC
+                    </td>
+                    <td className="py-2 text-xs text-muted">
+                      {new Date(log.created_at).toLocaleString("ja-JP")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {(coinLogs ?? []).length === 0 && (
+            <p className="text-sm text-muted">履歴はまだありません</p>
+          )}
+        </section>
+      </div>
     </main>
   );
 }

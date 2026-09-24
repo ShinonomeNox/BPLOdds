@@ -14,7 +14,19 @@ export function ShareBonusButton({ available }: { available: boolean }) {
     const intentUrl = new URL("https://twitter.com/intent/tweet");
     intentUrl.searchParams.set("text", SHARE_TEXT);
     intentUrl.searchParams.set("url", window.location.origin);
-    window.open(intentUrl.toString(), "_blank", "noopener,noreferrer");
+    const popup = window.open(
+      intentUrl.toString(),
+      "_blank",
+      "noopener,noreferrer",
+    );
+
+    // ポップアップブロック等で投稿画面自体が開けなかった場合はボーナスを付与しない
+    if (!popup) {
+      setMessage(
+        "投稿画面を開けませんでした。ポップアップブロックを解除してから再度お試しください",
+      );
+      return;
+    }
 
     setIsPending(true);
     try {
@@ -33,23 +45,23 @@ export function ShareBonusButton({ available }: { available: boolean }) {
 
   if (!available) {
     return (
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-muted">
         本日分のXシェアボーナスは受け取り済みです
       </p>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="mt-2 flex flex-col items-center gap-1">
       <button
         type="button"
         onClick={handleShare}
         disabled={isPending}
-        className="rounded border border-black px-4 py-2 disabled:opacity-50"
+        className="btn-secondary text-sm"
       >
         Xでシェアしてボーナスをもらう
       </button>
-      {message && <p className="text-xs text-gray-500">{message}</p>}
+      {message && <p className="text-xs text-muted">{message}</p>}
     </div>
   );
 }

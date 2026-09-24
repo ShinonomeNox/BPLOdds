@@ -63,12 +63,12 @@ export function AddParticipantsForm({
   }
 
   if (availablePlayers.length === 0) {
-    return <p className="text-xs text-gray-400">追加できる選手がいません</p>;
+    return <p className="text-xs text-muted">追加できる選手がいません</p>;
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <p className="text-sm font-medium">出場選手を追加</p>
+      <p className="text-sm font-medium text-foreground">出場選手を追加</p>
       {availablePlayers.map((player) => (
         <div key={player.id} className="flex items-center gap-3 text-sm">
           <span className="w-32">{player.name}</span>
@@ -85,11 +85,11 @@ export function AddParticipantsForm({
           ))}
         </div>
       ))}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       <button
         type="submit"
         disabled={isPending}
-        className="self-start rounded border border-black px-3 py-1.5 text-sm disabled:opacity-50"
+        className="self-start btn-secondary text-sm"
       >
         追加
       </button>

@@ -50,72 +50,108 @@ export default async function PlayerPage({
   ]);
 
   return (
-    <main className="flex-1 p-8 max-w-lg mx-auto w-full flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-bold">{player.name}</h1>
-        <p className="text-sm text-gray-500">
-          {team?.name} / {player.game_title.toUpperCase()}
+    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10 sm:px-6">
+      <div className="card-surface mb-6 flex flex-col items-center gap-4 p-6 text-center sm:p-8">
+        <div>
+          <h1 className="glow-text text-2xl font-bold text-foreground">
+            {player.name}
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            {team?.name} / {player.game_title.toUpperCase()}
+          </p>
+        </div>
+
+        <p className="text-sm text-muted">
+          エールポイント
+          <br />
+          <span className="text-3xl font-extrabold text-accent-cyan">
+            {(yellPoints?.total_points ?? 0).toLocaleString("ja-JP")}
+          </span>{" "}
+          pt
         </p>
-      </div>
 
-      <p className="text-lg">
-        エールポイント:{" "}
-        <span className="font-semibold">
-          {(yellPoints?.total_points ?? 0).toLocaleString("ja-JP")} pt
-        </span>
-      </p>
-
-      <div className="flex flex-col gap-2">
-        <p className="text-sm font-semibold">直エールを送る</p>
         <DonateForm playerId={player.id} isLoggedIn={!!user} />
       </div>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="font-semibold">今シーズンの通算成績</h2>
-        {seasonStats && seasonStats.songs_played > 0 ? (
-          <ul className="text-sm">
-            <li>出場曲数: {seasonStats.songs_played}</li>
-            <li>1位回数: {seasonStats.first_place_count}</li>
-            <li>
-              平均スコア:{" "}
-              {seasonStats.avg_raw_score !== null
-                ? Number(seasonStats.avg_raw_score).toFixed(1)
-                : "-"}
-            </li>
-            <li>ベストスコア: {seasonStats.best_score ?? "-"}</li>
-          </ul>
-        ) : (
-          <p className="text-sm text-gray-400">まだ出場データがありません</p>
+      <div className="flex flex-col gap-4">
+        <section className="card-surface p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
+            今シーズンの通算成績
+          </h2>
+          {seasonStats && seasonStats.songs_played > 0 ? (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <Stat label="出場曲数" value={seasonStats.songs_played} />
+              <Stat label="1位回数" value={seasonStats.first_place_count} />
+              <Stat
+                label="平均スコア"
+                value={
+                  seasonStats.avg_raw_score !== null
+                    ? Number(seasonStats.avg_raw_score).toFixed(1)
+                    : "-"
+                }
+              />
+              <Stat label="ベストスコア" value={seasonStats.best_score ?? "-"} />
+            </div>
+          ) : (
+            <p className="text-sm text-muted">まだ出場データがありません</p>
+          )}
+        </section>
+
+        {(themeStats ?? []).length > 0 && (
+          <section className="card-surface p-5 sm:p-6">
+            <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
+              テーマ別成績
+            </h2>
+            <ul className="flex flex-col gap-1 text-sm text-foreground">
+              {(themeStats ?? []).map((stat) => (
+                <li
+                  key={stat.theme}
+                  className="flex justify-between border-b border-border py-1 last:border-b-0"
+                >
+                  <span>{stat.theme ?? "（未分類）"}</span>
+                  <span className="text-muted">
+                    {stat.wins}勝 / {stat.plays}戦
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
-      </section>
 
-      {(themeStats ?? []).length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="font-semibold">テーマ別成績</h2>
-          <ul className="text-sm">
-            {(themeStats ?? []).map((stat) => (
-              <li key={stat.theme}>
-                {stat.theme ?? "（未分類）"}: {stat.wins}勝 / {stat.plays}戦
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {(legacyStats ?? []).length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="font-semibold">前シーズン以前の成績</h2>
-          <ul className="text-sm">
-            {(legacyStats ?? []).map((stat) => (
-              <li key={stat.id}>
-                {stat.season} /{" "}
-                {stat.category_type === "theme" ? "テーマ" : "レベル"}:{" "}
-                {stat.category_value} — {stat.wins}勝 / {stat.plays}戦
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+        {(legacyStats ?? []).length > 0 && (
+          <section className="card-surface p-5 sm:p-6">
+            <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
+              前シーズン以前の成績
+            </h2>
+            <ul className="flex flex-col gap-1 text-sm text-foreground">
+              {(legacyStats ?? []).map((stat) => (
+                <li
+                  key={stat.id}
+                  className="flex justify-between border-b border-border py-1 last:border-b-0"
+                >
+                  <span>
+                    {stat.season} /{" "}
+                    {stat.category_type === "theme" ? "テーマ" : "レベル"}:{" "}
+                    {stat.category_value}
+                  </span>
+                  <span className="text-muted">
+                    {stat.wins}勝 / {stat.plays}戦
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
     </main>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex flex-col items-center gap-1 text-center">
+      <span className="text-xl font-extrabold text-foreground">{value}</span>
+      <span className="text-xs text-muted">{label}</span>
+    </div>
   );
 }

@@ -62,7 +62,7 @@ export function BetTypeSettlePanel({ betType }: { betType: BetType }) {
   }
 
   return (
-    <div className="rounded border p-3 flex flex-col gap-2">
+    <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
       <p className="font-medium text-sm">{betType.label}</p>
       <div className="flex flex-col gap-1 text-sm">
         {betType.options.map((option) => (
@@ -80,11 +80,11 @@ export function BetTypeSettlePanel({ betType }: { betType: BetType }) {
         type="button"
         onClick={handleSettle}
         disabled={isPending}
-        className="self-start rounded border border-black px-3 py-1.5 text-sm disabled:opacity-50"
+        className="self-start btn-secondary text-sm"
       >
         正解を確定して精算
       </button>
-      {result && <p className="text-sm text-gray-600">{result}</p>}
+      {result && <p className="text-sm text-muted">{result}</p>}
     </div>
   );
 }

@@ -43,20 +43,24 @@ export function SongStatusButtons({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {STATUSES.map(({ value, label }) => (
           <button
             key={value}
             type="button"
             disabled={isPending || currentStatus === value}
             onClick={() => updateStatus(value)}
-            className="rounded border border-black px-3 py-2 text-xs font-semibold disabled:opacity-40"
+            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-40 ${
+              currentStatus === value
+                ? "border-accent-cyan bg-accent-cyan/10 text-accent-cyan"
+                : "border-border text-foreground hover:border-accent-cyan"
+            }`}
           >
             {label}
           </button>
         ))}
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );
 }

@@ -3,13 +3,14 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { createServiceClient } from "@/lib/supabase/service";
 import { CreatePlayerForm } from "@/components/admin/create-player-form";
 import { PlayerListItem } from "@/components/admin/player-list-item";
+import { BulkImportForm } from "@/components/admin/bulk-import-form";
 
 export default async function AdminPlayersPage() {
   const admin = await requireAdmin();
   if (!admin) {
     return (
-      <main className="flex-1 flex items-center justify-center p-8">
-        <p>管理者権限が必要です。</p>
+      <main className="flex flex-1 items-center justify-center p-8">
+        <p className="text-muted">管理者権限が必要です。</p>
       </main>
     );
   }
@@ -26,35 +27,49 @@ export default async function AdminPlayersPage() {
   const teamNameById = new Map((teams ?? []).map((t) => [t.id, t.name]));
 
   return (
-    <main className="flex-1 p-8 max-w-2xl mx-auto w-full flex flex-col gap-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">選手管理</h1>
-        <Link href="/admin" className="text-sm underline">
+    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10 sm:px-6">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="glow-text text-xl font-bold text-foreground sm:text-2xl">
+          選手管理
+        </h1>
+        <Link href="/admin" className="text-sm text-accent-cyan underline">
           管理トップへ戻る
         </Link>
       </div>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="font-semibold">新規作成</h2>
-        <CreatePlayerForm teams={teams ?? []} />
-      </section>
+      <div className="flex flex-col gap-6">
+        <section className="card-surface p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
+            新規作成
+          </h2>
+          <CreatePlayerForm teams={teams ?? []} />
+        </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="font-semibold">一覧</h2>
-        <ul className="flex flex-col gap-1">
-          {(players ?? []).map((player) => (
-            <PlayerListItem
-              key={player.id}
-              player={player}
-              teams={teams ?? []}
-              teamName={teamNameById.get(player.team_id) ?? "?"}
-            />
-          ))}
-          {(players ?? []).length === 0 && (
-            <p className="text-sm text-gray-400">選手がまだいません</p>
-          )}
-        </ul>
-      </section>
+        <BulkImportForm
+          endpoint="/api/admin/players/bulk"
+          helpText="1行に「選手名, 所属チーム名」の形式で入力してください（チーム名は完全一致が必要です）"
+          placeholder={"DOLPHIN, RENSAGE\nAKITOSHI, DIVER-SE"}
+        />
+
+        <section className="card-surface p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
+            一覧
+          </h2>
+          <ul className="flex flex-col gap-1">
+            {(players ?? []).map((player) => (
+              <PlayerListItem
+                key={player.id}
+                player={player}
+                teams={teams ?? []}
+                teamName={teamNameById.get(player.team_id) ?? "?"}
+              />
+            ))}
+            {(players ?? []).length === 0 && (
+              <p className="text-sm text-muted">選手がまだいません</p>
+            )}
+          </ul>
+        </section>
+      </div>
     </main>
   );
 }

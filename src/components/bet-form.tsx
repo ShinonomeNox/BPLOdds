@@ -46,9 +46,9 @@ export function BetForm({
 
   if (!isLoggedIn) {
     return (
-      <div className="flex items-center justify-between text-sm">
-        <span>{label}</span>
-        <Link href="/login" className="text-xs underline">
+      <div className="flex items-center justify-between gap-2 border-b border-border py-2 text-sm last:border-b-0">
+        <span className="text-foreground">{label}</span>
+        <Link href="/login" className="text-xs text-accent-cyan underline">
           ログインしてエールを送る
         </Link>
       </div>
@@ -56,27 +56,29 @@ export function BetForm({
   }
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-2 text-sm">
-        <span className="flex-1">{label}</span>
-        <input
-          type="number"
-          min={1}
-          value={amount}
-          onChange={(e) => setAmount(Number(e.target.value))}
-          className="w-20 rounded border px-2 py-1"
-        />
-        <span className="text-xs text-gray-400">EC</span>
-        <button
-          type="button"
-          onClick={handleBet}
-          disabled={isPending}
-          className="rounded border border-black px-2 py-1 text-xs disabled:opacity-50"
-        >
-          エールを送る
-        </button>
+    <div className="flex flex-col gap-1 border-b border-border py-2 last:border-b-0">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <span className="flex-1 text-sm text-foreground">{label}</span>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min={1}
+            value={amount}
+            onChange={(e) => setAmount(Number(e.target.value))}
+            className="input-base w-20 py-1 text-sm"
+          />
+          <span className="text-xs text-muted">EC</span>
+          <button
+            type="button"
+            onClick={handleBet}
+            disabled={isPending}
+            className="btn-secondary px-3 py-1 text-xs"
+          >
+            エールを送る
+          </button>
+        </div>
       </div>
-      {message && <p className="text-xs text-gray-500">{message}</p>}
+      {message && <p className="text-xs text-muted">{message}</p>}
     </div>
   );
 }

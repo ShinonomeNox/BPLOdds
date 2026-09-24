@@ -3,19 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { StatusBadge } from "@/components/status-badge";
 import type { SongStatus } from "@/types/database";
-
-const STATUS_LABEL: Record<SongStatus, string> = {
-  open: "受付中",
-  closed: "締切済み",
-  settled: "終了",
-};
-
-const STATUS_COLOR: Record<SongStatus, string> = {
-  open: "text-green-600",
-  closed: "text-red-600",
-  settled: "text-gray-500",
-};
 
 export function SongRealtimeStatus({
   songId,
@@ -53,8 +42,8 @@ export function SongRealtimeStatus({
   }, [songId, router]);
 
   return (
-    <p className={`text-sm font-semibold ${STATUS_COLOR[status]}`}>
-      状態: {STATUS_LABEL[status]}
-    </p>
+    <div className="flex items-center gap-2 text-sm text-muted">
+      状態: <StatusBadge status={status} />
+    </div>
   );
 }

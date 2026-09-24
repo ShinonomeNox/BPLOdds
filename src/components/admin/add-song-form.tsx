@@ -56,8 +56,11 @@ export function AddSongForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2 rounded border p-3">
-      <p className="text-sm font-medium">曲を追加</p>
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-2 rounded-lg border border-border p-3"
+    >
+      <p className="text-sm font-medium text-foreground">曲を追加</p>
       <label className="flex items-center gap-2 text-sm">
         曲番号
         <input
@@ -65,7 +68,7 @@ export function AddSongForm({
           min={1}
           value={songNumber}
           onChange={(e) => setSongNumber(Number(e.target.value))}
-          className="w-20 rounded border px-2 py-1"
+          className="input-base w-20 py-1"
         />
       </label>
       <div className="flex flex-col gap-1 text-sm">
@@ -81,7 +84,7 @@ export function AddSongForm({
               />
               {label}
               {disabled && (
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-muted">
                   （出場選手が4人ではありません）
                 </span>
               )}
@@ -89,11 +92,11 @@ export function AddSongForm({
           );
         })}
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       <button
         type="submit"
         disabled={isPending}
-        className="self-start rounded border border-black px-3 py-1.5 text-sm disabled:opacity-50"
+        className="self-start btn-secondary text-sm"
       >
         曲を追加
       </button>

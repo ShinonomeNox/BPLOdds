@@ -55,13 +55,13 @@ export function CreateMatchForm({ teams }: { teams: Team[] }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-md">
+    <form onSubmit={handleSubmit} className="flex max-w-md flex-col gap-3">
       <label className="flex flex-col gap-1">
-        <span className="text-sm">対戦形式</span>
+        <span className="text-sm text-muted">対戦形式</span>
         <select
           value={matchFormat}
           onChange={(e) => setMatchFormat(e.target.value as MatchFormat)}
-          className="rounded border px-3 py-2"
+          className="input-base"
         >
           {MATCH_FORMATS.map((format) => (
             <option key={format} value={format}>
@@ -71,12 +71,12 @@ export function CreateMatchForm({ teams }: { teams: Team[] }) {
         </select>
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-sm">Aチーム</span>
+        <span className="text-sm text-muted">Aチーム</span>
         <select
           value={teamAId}
           onChange={(e) => setTeamAId(e.target.value)}
           required
-          className="rounded border px-3 py-2"
+          className="input-base"
         >
           <option value="">選択してください</option>
           {teams.map((team) => (
@@ -87,12 +87,12 @@ export function CreateMatchForm({ teams }: { teams: Team[] }) {
         </select>
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-sm">Bチーム</span>
+        <span className="text-sm text-muted">Bチーム</span>
         <select
           value={teamBId}
           onChange={(e) => setTeamBId(e.target.value)}
           required
-          className="rounded border px-3 py-2"
+          className="input-base"
         >
           <option value="">選択してください</option>
           {teams.map((team) => (
@@ -103,21 +103,17 @@ export function CreateMatchForm({ teams }: { teams: Team[] }) {
         </select>
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-sm">開始日時</span>
+        <span className="text-sm text-muted">開始日時</span>
         <input
           type="datetime-local"
           value={startTime}
           onChange={(e) => setStartTime(e.target.value)}
           required
-          className="rounded border px-3 py-2"
+          className="input-base"
         />
       </label>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button
-        type="submit"
-        disabled={isPending}
-        className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-      >
+      {error && <p className="text-sm text-danger">{error}</p>}
+      <button type="submit" disabled={isPending} className="btn-primary">
         試合を作成
       </button>
     </form>

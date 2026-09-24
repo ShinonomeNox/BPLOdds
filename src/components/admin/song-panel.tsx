@@ -37,8 +37,8 @@ export async function SongPanel({
     .eq("song_id", song.id);
 
   return (
-    <div className="rounded border p-4 flex flex-col gap-3">
-      <p className="font-medium">
+    <div className="card-surface flex flex-col gap-3 p-4 sm:p-5">
+      <p className="font-medium text-foreground">
         曲{song.song_number}（status: {song.status}）
       </p>
       <SongStatusButtons songId={song.id} currentStatus={song.status} />
@@ -54,7 +54,7 @@ export async function SongPanel({
 
       {trifectaType && (
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium">
+          <p className="text-sm font-medium text-foreground">
             3連単（{trifectaType.options.length}択）
           </p>
           <SettleTrifectaButton songId={song.id} />
