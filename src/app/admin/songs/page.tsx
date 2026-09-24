@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createServiceClient } from "@/lib/supabase/service";
 import { CreateSongForm } from "@/components/admin/create-song-form";
+import { SongMasterListItem } from "@/components/admin/song-master-list-item";
 
 export default async function AdminSongsPage() {
   const admin = await requireAdmin();
@@ -35,16 +36,12 @@ export default async function AdminSongsPage() {
 
       <section className="flex flex-col gap-2">
         <h2 className="font-semibold">一覧</h2>
-        <ul className="flex flex-col gap-1 text-sm">
+        <ul className="flex flex-col gap-1">
           {(songs ?? []).map((song) => (
-            <li key={song.id}>
-              [{song.game_title.toUpperCase()}] {song.name}
-              {song.theme && ` / ${song.theme}`}
-              {song.level !== null && ` / Lv.${song.level}`}
-            </li>
+            <SongMasterListItem key={song.id} song={song} />
           ))}
           {(songs ?? []).length === 0 && (
-            <p className="text-gray-400">課題曲がまだありません</p>
+            <p className="text-sm text-gray-400">課題曲がまだありません</p>
           )}
         </ul>
       </section>

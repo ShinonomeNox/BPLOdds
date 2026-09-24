@@ -198,3 +198,12 @@ create table system_settings (
 );
 insert into system_settings (key, value) values
   ('yell_point_bet_bonus_rate', '0.1'); -- 10%。運営が数値だけ変更可能
+
+-- ==== Realtime配信用のRLSポリシー ====
+-- matches / tag_battle_songs は誰でも閲覧できる公開情報のため、
+-- 読み取りのみを許可する。Supabase RealtimeはRLSで読み取りが
+-- 許可されたテーブルでないとanonロールにイベントを配信しないため、
+-- レプリケーション（Database > Replication）の登録に加えて必須の設定。
+-- それ以外のテーブルはService Role Key経由のサーバーサイドアクセスのみのため対象外。
+create policy "matches_public_read" on matches for select using (true);
+create policy "tag_battle_songs_public_read" on tag_battle_songs for select using (true);

@@ -41,6 +41,9 @@ export default async function AdminPage() {
           <Link href="/admin/legacy-stats" className="underline">
             前シーズン統計管理
           </Link>
+          <Link href="/admin/users" className="underline">
+            ユーザー管理
+          </Link>
         </div>
       </section>
 

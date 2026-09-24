@@ -21,13 +21,31 @@ export default async function PlayerPage({
     notFound();
   }
 
-  const [{ data: team }, { data: yellPoints }, user] = await Promise.all([
+  const [
+    { data: team },
+    { data: yellPoints },
+    { data: seasonStats },
+    { data: themeStats },
+    { data: legacyStats },
+    user,
+  ] = await Promise.all([
     supabase.from("teams").select("name").eq("id", player.team_id).single(),
     supabase
       .from("player_yell_points")
       .select("total_points")
       .eq("player_id", id)
       .maybeSingle(),
+    supabase
+      .from("player_season_stats")
+      .select("*")
+      .eq("player_id", id)
+      .maybeSingle(),
+    supabase.from("player_theme_stats").select("*").eq("player_id", id),
+    supabase
+      .from("player_legacy_stats")
+      .select("*")
+      .eq("player_id", id)
+      .order("season", { ascending: false }),
     getCurrentUser(),
   ]);
 
@@ -51,6 +69,53 @@ export default async function PlayerPage({
         <p className="text-sm font-semibold">直エールを送る</p>
         <DonateForm playerId={player.id} isLoggedIn={!!user} />
       </div>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="font-semibold">今シーズンの通算成績</h2>
+        {seasonStats && seasonStats.songs_played > 0 ? (
+          <ul className="text-sm">
+            <li>出場曲数: {seasonStats.songs_played}</li>
+            <li>1位回数: {seasonStats.first_place_count}</li>
+            <li>
+              平均スコア:{" "}
+              {seasonStats.avg_raw_score !== null
+                ? Number(seasonStats.avg_raw_score).toFixed(1)
+                : "-"}
+            </li>
+            <li>ベストスコア: {seasonStats.best_score ?? "-"}</li>
+          </ul>
+        ) : (
+          <p className="text-sm text-gray-400">まだ出場データがありません</p>
+        )}
+      </section>
+
+      {(themeStats ?? []).length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="font-semibold">テーマ別成績</h2>
+          <ul className="text-sm">
+            {(themeStats ?? []).map((stat) => (
+              <li key={stat.theme}>
+                {stat.theme ?? "（未分類）"}: {stat.wins}勝 / {stat.plays}戦
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(legacyStats ?? []).length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="font-semibold">前シーズン以前の成績</h2>
+          <ul className="text-sm">
+            {(legacyStats ?? []).map((stat) => (
+              <li key={stat.id}>
+                {stat.season} /{" "}
+                {stat.category_type === "theme" ? "テーマ" : "レベル"}:{" "}
+                {stat.category_value} — {stat.wins}勝 / {stat.plays}戦
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   );
 }

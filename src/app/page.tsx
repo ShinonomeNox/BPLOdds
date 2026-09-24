@@ -13,9 +13,17 @@ export default async function Home() {
         BEMANI PRO LEAGUE SEASON 6 エール応援サイト（非公式ファン企画）
       </p>
 
-      <Link href="/matches" className="text-sm underline">
-        試合一覧を見る
-      </Link>
+      <div className="flex gap-4 text-sm">
+        <Link href="/matches" className="underline">
+          試合一覧を見る
+        </Link>
+        <Link href="/teams" className="underline">
+          チーム一覧
+        </Link>
+        <Link href="/players" className="underline">
+          選手一覧
+        </Link>
+      </div>
 
       {user ? (
         <div className="flex flex-col items-center gap-3">

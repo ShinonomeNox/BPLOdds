@@ -27,20 +27,26 @@ export default async function MyPage() {
 
   const supabase = createServiceClient();
 
-  const [{ data: bets }, { data: coinLogs }] = await Promise.all([
-    supabase
-      .from("bets")
-      .select(
-        "id, bet_option_id, amount, payout_status, payout_amount, created_at",
-      )
-      .eq("user_id", user.userId)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("coin_logs")
-      .select("id, type, amount, created_at")
-      .eq("user_id", user.userId)
-      .order("created_at", { ascending: false }),
-  ]);
+  const [{ data: bets }, { data: coinLogs }, { data: donations }] =
+    await Promise.all([
+      supabase
+        .from("bets")
+        .select(
+          "id, bet_option_id, amount, payout_status, payout_amount, created_at",
+        )
+        .eq("user_id", user.userId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("coin_logs")
+        .select("id, type, amount, created_at")
+        .eq("user_id", user.userId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("yell_donations")
+        .select("id, player_id, team_id, amount, created_at")
+        .eq("user_id", user.userId)
+        .order("created_at", { ascending: false }),
+    ]);
 
   const optionIds = (bets ?? []).map((bet) => bet.bet_option_id);
   const { data: options } = await supabase
@@ -48,6 +54,29 @@ export default async function MyPage() {
     .select("id, label")
     .in("id", optionIds.length > 0 ? optionIds : [""]);
   const optionLabelById = new Map((options ?? []).map((o) => [o.id, o.label]));
+
+  const donatedPlayerIds = (donations ?? [])
+    .map((d) => d.player_id)
+    .filter((id): id is string => id !== null);
+  const donatedTeamIds = (donations ?? [])
+    .map((d) => d.team_id)
+    .filter((id): id is string => id !== null);
+  const [{ data: donatedPlayers }, { data: donatedTeams }] = await Promise.all(
+    [
+      supabase
+        .from("players")
+        .select("id, name")
+        .in("id", donatedPlayerIds.length > 0 ? donatedPlayerIds : [""]),
+      supabase
+        .from("teams")
+        .select("id, name")
+        .in("id", donatedTeamIds.length > 0 ? donatedTeamIds : [""]),
+    ],
+  );
+  const playerNameById = new Map(
+    (donatedPlayers ?? []).map((p) => [p.id, p.name]),
+  );
+  const teamNameById = new Map((donatedTeams ?? []).map((t) => [t.id, t.name]));
 
   return (
     <main className="flex-1 p-8 max-w-2xl mx-auto w-full flex flex-col gap-8">
@@ -91,6 +120,39 @@ export default async function MyPage() {
         {(bets ?? []).length === 0 && (
           <p className="text-sm text-gray-400">
             エール送信履歴はまだありません
+          </p>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="font-semibold">直エール送信履歴</h2>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-gray-500">
+              <th className="pb-1">対象</th>
+              <th className="pb-1">枚数</th>
+              <th className="pb-1">日時</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(donations ?? []).map((donation) => (
+              <tr key={donation.id} className="border-t">
+                <td className="py-1">
+                  {donation.player_id
+                    ? (playerNameById.get(donation.player_id) ?? "-")
+                    : (teamNameById.get(donation.team_id ?? "") ?? "-")}
+                </td>
+                <td className="py-1">{donation.amount} EC</td>
+                <td className="py-1 text-xs text-gray-400">
+                  {new Date(donation.created_at).toLocaleString("ja-JP")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {(donations ?? []).length === 0 && (
+          <p className="text-sm text-gray-400">
+            直エールの送信履歴はまだありません
           </p>
         )}
       </section>

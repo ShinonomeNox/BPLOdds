@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createServiceClient } from "@/lib/supabase/service";
 import { CreateTeamForm } from "@/components/admin/create-team-form";
+import { TeamListItem } from "@/components/admin/team-list-item";
 
 export default async function AdminTeamsPage() {
   const admin = await requireAdmin();
@@ -35,14 +36,12 @@ export default async function AdminTeamsPage() {
 
       <section className="flex flex-col gap-2">
         <h2 className="font-semibold">一覧</h2>
-        <ul className="flex flex-col gap-1 text-sm">
+        <ul className="flex flex-col gap-1">
           {(teams ?? []).map((team) => (
-            <li key={team.id}>
-              {team.name}（{team.game_title.toUpperCase()}）
-            </li>
+            <TeamListItem key={team.id} team={team} />
           ))}
           {(teams ?? []).length === 0 && (
-            <p className="text-gray-400">チームがまだありません</p>
+            <p className="text-sm text-gray-400">チームがまだありません</p>
           )}
         </ul>
       </section>

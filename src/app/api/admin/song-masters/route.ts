@@ -12,6 +12,28 @@ interface CreateSongRequestBody {
   level?: unknown;
 }
 
+export async function GET() {
+  const admin = await requireAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: "管理者権限が必要です" }, { status: 403 });
+  }
+
+  const supabase = createServiceClient();
+  const { data: songs, error } = await supabase
+    .from("songs")
+    .select("*")
+    .order("name");
+
+  if (error) {
+    return NextResponse.json(
+      { error: `課題曲一覧の取得に失敗しました: ${error.message}` },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ songs });
+}
+
 export async function POST(request: Request) {
   const admin = await requireAdmin();
   if (!admin) {

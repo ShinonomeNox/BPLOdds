@@ -20,7 +20,7 @@ export function CreateSongForm() {
     setError(null);
     setIsPending(true);
     try {
-      const res = await fetch("/api/admin/songs", {
+      const res = await fetch("/api/admin/song-masters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
