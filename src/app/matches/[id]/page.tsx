@@ -3,12 +3,22 @@ import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getBetTypesWithOptions } from "@/lib/betting/get-bet-types-with-options";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { BetForm } from "@/components/bet-form";
+import { getBetsForOptionIds } from "@/lib/betting/get-bets-for-options";
+import { calculateApproximateOdds } from "@/lib/betting/pari-mutuel";
+import { isBetTypeOpen } from "@/lib/betting/bet-type-target-status";
+import { BetTypePanel, type BetOptionViewModel } from "@/components/bet-type-panel";
+import {
+  TrifectaBetPanel,
+  type TrifectaOptionViewModel,
+  type TrifectaParticipantViewModel,
+} from "@/components/trifecta-bet-panel";
 import { MatchRealtimeStatus } from "@/components/realtime/match-realtime-status";
 import { RoundRealtimeStatus } from "@/components/realtime/round-realtime-status";
 import { SongRealtimeStatus } from "@/components/realtime/song-realtime-status";
-import { MatchBettingTabs, type BettingTab } from "@/components/match-betting-tabs";
+import { Tabs, type TabItem } from "@/components/tabs";
 import { ROUND_FORMAT_LABEL_JA } from "@/lib/betting/match-format";
+import { MatchTeamHeader } from "@/components/match-team-header";
+import type { BetType } from "@/lib/betting/get-bet-types-with-options";
 
 export default async function MatchPage({
   params,
@@ -37,8 +47,16 @@ export default async function MatchPage({
     { data: strategyCardUsages },
     user,
   ] = await Promise.all([
-    supabase.from("teams").select("name").eq("id", match.team_a_id).single(),
-    supabase.from("teams").select("name").eq("id", match.team_b_id).single(),
+    supabase
+      .from("teams")
+      .select("name, color")
+      .eq("id", match.team_a_id)
+      .single(),
+    supabase
+      .from("teams")
+      .select("name, color")
+      .eq("id", match.team_b_id)
+      .single(),
     supabase
       .from("match_rounds")
       .select("*")
@@ -67,7 +85,7 @@ export default async function MatchPage({
   const songLabelById = new Map(
     (songs ?? []).map((s) => [
       s.id,
-      `曲${s.song_number}${s.theme ? `　${s.theme}` : ""}`,
+      `${s.song_number === 1 ? (teamA?.name ?? "Aチーム") : (teamB?.name ?? "Bチーム")}の自選曲${s.theme ? `　${s.theme}` : ""}`,
     ]),
   );
 
@@ -98,10 +116,7 @@ export default async function MatchPage({
   const roundBetTypesList = await Promise.all(
     roundList.map((round) => getBetTypesWithOptions(supabase, { roundId: round.id })),
   );
-  const roundSongBetTypesByRoundId = new Map<
-    string,
-    Awaited<ReturnType<typeof getBetTypesWithOptions>>[]
-  >();
+  const roundSongBetTypesByRoundId = new Map<string, BetType[][]>();
   for (const round of roundList) {
     const roundSongs = songsByRoundId.get(round.id) ?? [];
     const songBetTypesList = await Promise.all(
@@ -110,24 +125,70 @@ export default async function MatchPage({
     roundSongBetTypesByRoundId.set(round.id, songBetTypesList);
   }
 
-  const tabs: BettingTab[] = [
+  // 全option分のオッズ・自分の賭けを1回のクエリでまとめて算出する
+  const allOptionIds: string[] = [];
+  for (const bt of marginBetTypes) for (const o of bt.options) allOptionIds.push(o.id);
+  for (const list of roundBetTypesList)
+    for (const bt of list) for (const o of bt.options) allOptionIds.push(o.id);
+  for (const lists of roundSongBetTypesByRoundId.values())
+    for (const list of lists)
+      for (const bt of list) for (const o of bt.options) allOptionIds.push(o.id);
+
+  const allBets = await getBetsForOptionIds(supabase, allOptionIds);
+  const oddsList = calculateApproximateOdds(
+    allBets.map((b) => ({ optionId: b.optionId, amount: b.amount })),
+    allOptionIds,
+  );
+  const oddsByOptionId = new Map(oddsList.map((o) => [o.optionId, o.rate]));
+
+  const myBetAmountByOptionId = new Map<string, number>();
+  if (user) {
+    for (const bet of allBets) {
+      if (bet.userId !== user.userId) continue;
+      myBetAmountByOptionId.set(
+        bet.optionId,
+        (myBetAmountByOptionId.get(bet.optionId) ?? 0) + bet.amount,
+      );
+    }
+  }
+
+  function toOptionViewModels(
+    options: { id: string; label: string }[],
+  ): BetOptionViewModel[] {
+    return options.map((o) => ({
+      id: o.id,
+      label: o.label,
+      odds: oddsByOptionId.get(o.id) ?? null,
+      myBetAmount: myBetAmountByOptionId.get(o.id) ?? null,
+    }));
+  }
+
+  function toTrifectaOptionViewModels(
+    options: { id: string; option_key: string }[],
+  ): TrifectaOptionViewModel[] {
+    return options.map((o) => ({
+      id: o.id,
+      optionKey: o.option_key,
+      odds: oddsByOptionId.get(o.id) ?? null,
+      myBetAmount: myBetAmountByOptionId.get(o.id) ?? null,
+    }));
+  }
+
+  const tabs: TabItem[] = [
     {
       key: "margin",
       label: "点差予想",
       content: (
         <>
           {marginBetTypes.map((betType) => (
-            <div key={betType.id} className="card-surface p-4 sm:p-5">
-              <p className="mb-2 font-semibold text-foreground">{betType.label}</p>
-              {betType.options.map((option) => (
-                <BetForm
-                  key={option.id}
-                  betOptionId={option.id}
-                  label={option.label}
-                  isLoggedIn={!!user}
-                />
-              ))}
-            </div>
+            <BetTypePanel
+              key={betType.id}
+              betTypeId={betType.id}
+              betTypeLabel={betType.label}
+              options={toOptionViewModels(betType.options)}
+              isLoggedIn={!!user}
+              isClosed={!isBetTypeOpen({ matchStatus: match.status })}
+            />
           ))}
         </>
       ),
@@ -143,6 +204,19 @@ export default async function MatchPage({
       const playerB2Name = round.player_b2_id
         ? (playerNameById.get(round.player_b2_id) ?? "?")
         : null;
+
+      const roundPlayerIds = [
+        round.player_a_id,
+        round.player_b_id,
+        round.player_a2_id,
+        round.player_b2_id,
+      ].filter((v): v is string => !!v);
+      const roundParticipants = (participants ?? []).filter((p) =>
+        roundPlayerIds.includes(p.player_id),
+      );
+      const trifectaParticipants: TrifectaParticipantViewModel[] = roundParticipants.map(
+        (p) => ({ id: p.id, name: playerNameById.get(p.player_id) ?? "?" }),
+      );
 
       return {
         key: round.id,
@@ -168,45 +242,56 @@ export default async function MatchPage({
             </div>
 
             {roundBetTypesList[index].map((betType) => (
-              <div key={betType.id} className="card-surface p-4 sm:p-5">
-                <p className="mb-2 font-semibold text-foreground">{betType.label}</p>
-                {betType.options.map((option) => (
-                  <BetForm
-                    key={option.id}
-                    betOptionId={option.id}
-                    label={option.label}
-                    isLoggedIn={!!user}
-                  />
-                ))}
-              </div>
+              <BetTypePanel
+                key={betType.id}
+                betTypeId={betType.id}
+                betTypeLabel={betType.label}
+                options={toOptionViewModels(betType.options)}
+                isLoggedIn={!!user}
+                isClosed={!isBetTypeOpen({ roundStatus: round.status })}
+              />
             ))}
 
-            {roundSongs.map((song, songIndex) => (
-              <div key={song.id} className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-foreground">
-                    {songLabelById.get(song.id) ??
-                      (song.song_number === 1 ? "Aチーム選曲" : "Bチーム選曲")}
-                  </p>
-                  <SongRealtimeStatus songId={song.id} initialStatus={song.status} />
-                </div>
-                {songBetTypesList[songIndex].map((betType) => (
-                  <div key={betType.id} className="card-surface p-4 sm:p-5">
-                    <p className="mb-2 text-sm font-semibold text-foreground">
-                      {betType.label}
-                    </p>
-                    {betType.options.map((option) => (
-                      <BetForm
-                        key={option.id}
-                        betOptionId={option.id}
-                        label={option.label}
-                        isLoggedIn={!!user}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ))}
+            {roundSongs.length > 0 && (
+              <Tabs
+                tabs={roundSongs.map((song, songIndex) => ({
+                  key: song.id,
+                  label: songLabelById.get(song.id) ?? `曲${song.song_number}`,
+                  content: (
+                    <>
+                      <div className="flex items-center justify-end">
+                        <SongRealtimeStatus
+                          songId={song.id}
+                          initialStatus={song.status}
+                        />
+                      </div>
+                      {songBetTypesList[songIndex].map((betType) =>
+                        betType.type_key === "trifecta" ? (
+                          <TrifectaBetPanel
+                            key={betType.id}
+                            betTypeId={betType.id}
+                            betTypeLabel={betType.label}
+                            participants={trifectaParticipants}
+                            options={toTrifectaOptionViewModels(betType.options)}
+                            isLoggedIn={!!user}
+                            isClosed={!isBetTypeOpen({ songStatus: song.status })}
+                          />
+                        ) : (
+                          <BetTypePanel
+                            key={betType.id}
+                            betTypeId={betType.id}
+                            betTypeLabel={betType.label}
+                            options={toOptionViewModels(betType.options)}
+                            isLoggedIn={!!user}
+                            isClosed={!isBetTypeOpen({ songStatus: song.status })}
+                          />
+                        ),
+                      )}
+                    </>
+                  ),
+                }))}
+              />
+            )}
           </>
         ),
       };
@@ -219,22 +304,20 @@ export default async function MatchPage({
         <span className="mb-2 inline-block rounded-full border border-accent-purple/40 bg-accent-purple/15 px-2 py-0.5 text-xs font-semibold text-accent-purple">
           {match.game_title.toUpperCase()}
         </span>
-        <h1 className="text-xl font-bold text-foreground sm:text-2xl">
-          <Link
-            href={`/teams/${match.team_a_id}`}
-            className="underline decoration-accent-cyan/50 hover:text-accent-cyan"
-          >
-            {teamA?.name}
-          </Link>{" "}
-          <span className="text-muted">vs</span>{" "}
-          <Link
-            href={`/teams/${match.team_b_id}`}
-            className="underline decoration-accent-cyan/50 hover:text-accent-cyan"
-          >
-            {teamB?.name}
-          </Link>
-        </h1>
-        <p className="mt-1 text-sm text-muted">
+        <MatchTeamHeader
+          teamA={{
+            id: match.team_a_id,
+            name: teamA?.name ?? "?",
+            color: teamA?.color ?? null,
+          }}
+          teamB={{
+            id: match.team_b_id,
+            name: teamB?.name ?? "?",
+            color: teamB?.color ?? null,
+          }}
+          size="lg"
+        />
+        <p className="mt-2 text-sm text-muted">
           {new Date(match.start_time).toLocaleString("ja-JP")}
         </p>
         <div className="mt-3">
@@ -279,7 +362,7 @@ export default async function MatchPage({
         )}
       </div>
 
-      <MatchBettingTabs tabs={tabs} />
+      <Tabs tabs={tabs} />
     </main>
   );
 }

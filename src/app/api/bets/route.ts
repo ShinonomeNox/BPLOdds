@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { createServiceClient } from "@/lib/supabase/service";
+import { isBetTypeOpen } from "@/lib/betting/bet-type-target-status";
 
 interface CreateBetRequestBody {
   betOptionId?: unknown;
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
 
   const { data: betType, error: betTypeError } = await supabase
     .from("bet_types")
-    .select("match_id, song_id")
+    .select("match_id, round_id, song_id")
     .eq("id", betOption.bet_type_id)
     .maybeSingle();
 
@@ -81,9 +82,30 @@ export async function POST(request: Request) {
         { status: 404 },
       );
     }
-    if (match.status !== "scheduled") {
+    if (!isBetTypeOpen({ matchStatus: match.status })) {
       return NextResponse.json(
         { error: "この試合は既に締め切られています" },
+        { status: 409 },
+      );
+    }
+  }
+
+  if (betType.round_id) {
+    const { data: round, error: roundError } = await supabase
+      .from("match_rounds")
+      .select("status")
+      .eq("id", betType.round_id)
+      .maybeSingle();
+
+    if (roundError || !round) {
+      return NextResponse.json(
+        { error: "対象のマッチが見つかりません" },
+        { status: 404 },
+      );
+    }
+    if (!isBetTypeOpen({ roundStatus: round.status })) {
+      return NextResponse.json(
+        { error: "このマッチは既に締め切られています" },
         { status: 409 },
       );
     }
@@ -102,7 +124,7 @@ export async function POST(request: Request) {
         { status: 404 },
       );
     }
-    if (song.status !== "open") {
+    if (!isBetTypeOpen({ songStatus: song.status })) {
       return NextResponse.json(
         { error: "この曲のベットは既に締め切られています" },
         { status: 409 },

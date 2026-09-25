@@ -96,18 +96,64 @@ export function buildMarginBetOptions(
   return buildMarginBetOptionsFromThreshold(GAME_MARGIN_THRESHOLDS[gameTitle]);
 }
 
-// メガミックスバトル（SDVX 1st match）の生スコア差ベット。
-// DESIGN.md記載の仮閾値（僅差1〜3 / 勝利4〜7 / 大差8以上）。実運用で調整予定。
-export const MEGAMIX_RAW_SCORE_DIFF_THRESHOLD: MarginThreshold = {
-  closeMax: 3,
-  winMax: 7,
-};
-
+// メガミックスバトルの生スコア差ベット（MatchCategory.md準拠）。
+// 4段階（3点差未満/4-6/7-9/10以上）×2チーム＋引き分けの9択。
 export function buildMegamixRawScoreDiffBetOptions(): BuildableBetOption[] {
-  return buildMarginBetOptionsFromThreshold(
-    MEGAMIX_RAW_SCORE_DIFF_THRESHOLD,
-    "スコア差",
+  const sides: TeamSide[] = ["a", "b"];
+  const tiers: { suffix: string; label: string; min: number; max: number | null }[] = [
+    { suffix: "close", label: "3点差未満勝利", min: 1, max: 3 },
+    { suffix: "mid", label: "4-6点差勝利", min: 4, max: 6 },
+    { suffix: "high", label: "7-9点差勝利", min: 7, max: 9 },
+    { suffix: "big", label: "10点差以上勝利", min: 10, max: null },
+  ];
+
+  const sidedOptions = sides.flatMap((side) =>
+    tiers.map((tier) => ({
+      optionKey: `${side}_${tier.suffix}`,
+      label: `${SIDE_LABEL[side]}${tier.label}`,
+      minDiff: tier.min,
+      maxDiff: tier.max,
+      side,
+    })),
   );
+
+  return [
+    ...sidedOptions,
+    {
+      optionKey: "draw",
+      label: "引き分け",
+      minDiff: 0,
+      maxDiff: 0,
+      side: null,
+    },
+  ];
+}
+
+// シングルバトル初見のみ（IIDX、1曲のみ）の勝敗3択。
+export function buildSingleFirstLookResultBetOptions(): BuildableBetOption[] {
+  return [
+    {
+      optionKey: "a_win",
+      label: "Aチーム勝ち",
+      minDiff: null,
+      maxDiff: null,
+      side: "a",
+    },
+    {
+      optionKey: "draw",
+      label: "引き分け",
+      minDiff: null,
+      maxDiff: null,
+      side: null,
+    },
+    {
+      optionKey: "b_win",
+      label: "Bチーム勝ち",
+      minDiff: null,
+      maxDiff: null,
+      side: "b",
+    },
+  ];
 }
 
 // DDRタッグバトルの順位配点パターン（5-1 / 4-2 / 3-3の3パターン、同点以外はside付きで5択）

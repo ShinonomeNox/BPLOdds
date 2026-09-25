@@ -3,6 +3,15 @@
 
 -- ==== マスターデータ ====
 
+-- 対戦カード表のGame番号（'1'〜'21', 'semi1', 'semi2', 'final'）と試合日時の対応表。
+-- 一括インポート時のstart_time決定に使う。日程未定・変更の可能性があるため、
+-- 管理画面から独立して編集できるようにする。
+create table game_schedules (
+  game_key text primary key,
+  start_time timestamptz not null,
+  updated_at timestamptz not null default now()
+);
+
 create table teams (
   id uuid primary key default gen_random_uuid(),
   name text not null,

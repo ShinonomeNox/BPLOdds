@@ -10,7 +10,6 @@ import type { GameTitle } from "@/types/database";
 
 interface BulkImportRequestBody {
   text?: unknown;
-  startTime?: unknown;
 }
 
 export async function POST(request: Request) {
@@ -20,17 +19,11 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as BulkImportRequestBody;
-  const { text, startTime } = body;
+  const { text } = body;
 
   if (typeof text !== "string" || text.trim().length === 0) {
     return NextResponse.json(
       { error: "textを指定してください" },
-      { status: 400 },
-    );
-  }
-  if (typeof startTime !== "string" || Number.isNaN(Date.parse(startTime))) {
-    return NextResponse.json(
-      { error: "startTimeはISO日時文字列で指定してください" },
       { status: 400 },
     );
   }
@@ -48,6 +41,12 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!parsed.gameKey) {
+    return NextResponse.json(
+      { error: "「Game」の行が見つかりません" },
+      { status: 400 },
+    );
+  }
   if (!parsed.teamAName || !parsed.teamBName) {
     return NextResponse.json(
       { error: "「Team A」「Team B」の行が見つかりません" },
@@ -62,6 +61,28 @@ export async function POST(request: Request) {
   }
 
   const supabase = createServiceClient();
+
+  const { data: schedule, error: scheduleError } = await supabase
+    .from("game_schedules")
+    .select("start_time")
+    .eq("game_key", parsed.gameKey)
+    .maybeSingle();
+
+  if (scheduleError) {
+    return NextResponse.json(
+      { error: `試合日程の取得に失敗しました: ${scheduleError.message}` },
+      { status: 500 },
+    );
+  }
+  if (!schedule) {
+    return NextResponse.json(
+      {
+        error: `Game「${parsed.gameKey}」の日程が試合日程管理に登録されていません。先に登録してください`,
+      },
+      { status: 400 },
+    );
+  }
+  const startTime = schedule.start_time;
   const results: { gameTitle: GameTitle; matchId: string }[] = [];
   const errors: string[] = [];
 

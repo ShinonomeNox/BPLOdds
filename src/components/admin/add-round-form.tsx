@@ -4,9 +4,24 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import type { RoundFormat } from "@/types/database";
 import { ROUND_FORMAT_LABEL_JA } from "@/lib/betting/match-format";
+import {
+  FINAL_ROUND_NUMBER,
+  ROUND_NUMBER_TO_LABEL,
+} from "@/lib/admin/parse-match-sheet";
 
-const ROUND_NUMBERS = [1, 2, 3, 4] as const;
-const ROUND_FORMATS: RoundFormat[] = ["single", "tag", "megamix"];
+const ROUND_NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, FINAL_ROUND_NUMBER];
+const ROUND_FORMATS: RoundFormat[] = [
+  "single",
+  "single_first_look",
+  "single_with_first_look",
+  "tag_score",
+  "tag_trifecta",
+  "megamix",
+];
+
+function requiresFourPlayers(format: RoundFormat): boolean {
+  return format === "tag_score" || format === "tag_trifecta";
+}
 
 export function AddRoundForm({ matchId }: { matchId: string }) {
   const router = useRouter();
@@ -36,8 +51,8 @@ export function AddRoundForm({ matchId }: { matchId: string }) {
           levelRange: levelRange || null,
           playerAName,
           playerBName,
-          playerA2Name: roundFormat === "tag" ? playerA2Name : null,
-          playerB2Name: roundFormat === "tag" ? playerB2Name : null,
+          playerA2Name: requiresFourPlayers(roundFormat) ? playerA2Name : null,
+          playerB2Name: requiresFourPlayers(roundFormat) ? playerB2Name : null,
         }),
       });
       const data = (await res.json()) as { error?: string };
@@ -72,7 +87,7 @@ export function AddRoundForm({ matchId }: { matchId: string }) {
         >
           {ROUND_NUMBERS.map((n) => (
             <option key={n} value={n}>
-              {n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : "4th"}
+              {ROUND_NUMBER_TO_LABEL[n]}
             </option>
           ))}
         </select>
@@ -130,7 +145,7 @@ export function AddRoundForm({ matchId }: { matchId: string }) {
           className="input-base py-1"
         />
       </label>
-      {roundFormat === "tag" && (
+      {requiresFourPlayers(roundFormat) && (
         <>
           <label className="flex flex-col gap-1 text-sm">
             選手A2

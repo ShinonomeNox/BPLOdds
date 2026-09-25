@@ -74,9 +74,9 @@ export async function deleteMatchRound(
   if (settledCount > 0 && !force) {
     return { blocked: true, settledCount };
   }
-  if (settledCount > 0 && force) {
-    await deleteBetsForOptions(supabase, betOptionIds);
-  }
+  // pending分はvoidedに変わっているだけでbet_optionsへのFKが残るため、
+  // 削除続行が決まったら（settledCountの有無によらず）必ず明示的に削除する
+  await deleteBetsForOptions(supabase, betOptionIds);
 
   if (betOptionIds.length > 0) {
     const { error } = await supabase

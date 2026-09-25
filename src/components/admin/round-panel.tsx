@@ -4,6 +4,7 @@ import { RoundStatusButtons } from "@/components/admin/round-status-buttons";
 import { BetTypeSettlePanel } from "@/components/admin/bet-type-settle-panel";
 import { SongPanel } from "@/components/admin/song-panel";
 import { DeleteRoundButton } from "@/components/admin/delete-round-button";
+import { Tabs, type TabItem } from "@/components/tabs";
 import { ROUND_FORMAT_LABEL_JA } from "@/lib/betting/match-format";
 import type { MatchStatus, RoundFormat } from "@/types/database";
 
@@ -31,9 +32,13 @@ interface ParticipantWithPlayer {
 export async function RoundPanel({
   round,
   participants,
+  teamAName,
+  teamBName,
 }: {
   round: MatchRound;
   participants: ParticipantWithPlayer[];
+  teamAName: string;
+  teamBName: string;
 }) {
   const supabase = createServiceClient();
   const betTypes = await getBetTypesWithOptions(supabase, { roundId: round.id });
@@ -100,10 +105,24 @@ export async function RoundPanel({
         <BetTypeSettlePanel key={betType.id} betType={betType} />
       ))}
 
-      {round.round_format === "tag" &&
-        (songs ?? []).map((song) => (
-          <SongPanel key={song.id} song={song} participants={roundParticipants} />
-        ))}
+      {round.round_format === "tag_trifecta" && (songs ?? []).length > 0 && (
+        <Tabs
+          tabs={(songs ?? []).map(
+            (song): TabItem => ({
+              key: song.id,
+              label: song.song_number === 1 ? teamAName : teamBName,
+              content: (
+                <SongPanel
+                  song={song}
+                  participants={roundParticipants}
+                  teamAName={teamAName}
+                  teamBName={teamBName}
+                />
+              ),
+            }),
+          )}
+        />
+      )}
     </div>
   );
 }

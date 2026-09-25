@@ -27,6 +27,16 @@ const SONG_SIDE_LABEL: Record<1 | 2, string> = {
   2: "Bチーム選曲",
 };
 
+// 4人（A/A2/B/B2）が出場する形式（MatchCategory.md準拠。SDVXタッグも2対2で4人出場）
+function requiresFourPlayers(format: RoundFormat): boolean {
+  return format === "tag_score" || format === "tag_trifecta";
+}
+
+// 曲データ＋3連単生成が必要な形式（DDRタッグのみ）
+function requiresSongs(format: RoundFormat): boolean {
+  return format === "tag_trifecta";
+}
+
 // 対戦カード表1行分（1つのマッチ/ラウンド）を登録する共通ロジック。
 // 一括インポートと個別ラウンド追加APIの両方から呼ばれる。
 export async function createMatchRound(
@@ -73,10 +83,10 @@ export async function createMatchRound(
   let participantA2Id: string | null = null;
   let participantB2Id: string | null = null;
 
-  if (roundFormat === "tag") {
+  if (requiresFourPlayers(roundFormat)) {
     if (!playerA2Name || !playerB2Name) {
       throw new Error(
-        `${roundLabel}: タッグバトルには選手A2/選手B2の指定が必要です`,
+        `${roundLabel}: このマッチには選手A2/選手B2の指定が必要です`,
       );
     }
     const resultA2 = await ensureMatchParticipant(
@@ -125,45 +135,47 @@ export async function createMatchRound(
   }
 
   const betTypeDef = buildRoundLevelBetTypeDef(roundFormat, roundLabel);
-  const { data: betType, error: betTypeError } = await supabase
-    .from("bet_types")
-    .insert({
-      round_id: round.id,
-      type_key: betTypeDef.typeKey,
-      label: betTypeDef.label,
-    })
-    .select("id")
-    .single();
+  if (betTypeDef) {
+    const { data: betType, error: betTypeError } = await supabase
+      .from("bet_types")
+      .insert({
+        round_id: round.id,
+        type_key: betTypeDef.typeKey,
+        label: betTypeDef.label,
+      })
+      .select("id")
+      .single();
 
-  if (betTypeError || !betType) {
-    throw new Error(
-      `${roundLabel}のベット種別作成に失敗しました: ${betTypeError?.message ?? "unknown error"}`,
+    if (betTypeError || !betType) {
+      throw new Error(
+        `${roundLabel}のベット種別作成に失敗しました: ${betTypeError?.message ?? "unknown error"}`,
+      );
+    }
+
+    const { error: optionsError } = await supabase.from("bet_options").insert(
+      betTypeDef.options.map((option) => ({
+        bet_type_id: betType.id,
+        option_key: option.optionKey,
+        label: option.label,
+        min_diff: option.minDiff,
+        max_diff: option.maxDiff,
+        side: option.side,
+        team_id: resolveTeamIdBySide(option.side, teamAId, teamBId),
+      })),
     );
+
+    if (optionsError) {
+      throw new Error(
+        `${roundLabel}のベット選択肢作成に失敗しました: ${optionsError.message}`,
+      );
+    }
+
+    if (!requiresFourPlayers(roundFormat)) {
+      await linkRoundBetOptionsToPlayers(supabase, round.id, playerAId, playerBId);
+    }
   }
 
-  const { error: optionsError } = await supabase.from("bet_options").insert(
-    betTypeDef.options.map((option) => ({
-      bet_type_id: betType.id,
-      option_key: option.optionKey,
-      label: option.label,
-      min_diff: option.minDiff,
-      max_diff: option.maxDiff,
-      side: option.side,
-      team_id: resolveTeamIdBySide(option.side, teamAId, teamBId),
-    })),
-  );
-
-  if (optionsError) {
-    throw new Error(
-      `${roundLabel}のベット選択肢作成に失敗しました: ${optionsError.message}`,
-    );
-  }
-
-  if (roundFormat !== "tag") {
-    await linkRoundBetOptionsToPlayers(supabase, round.id, playerAId, playerBId);
-  }
-
-  if (roundFormat === "tag") {
+  if (requiresSongs(roundFormat)) {
     const trifectaParticipants = [
       { id: participantAId, name: playerAName },
       { id: participantBId, name: playerBName },

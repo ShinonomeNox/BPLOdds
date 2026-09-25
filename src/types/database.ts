@@ -5,7 +5,13 @@ export type GameTitle = "iidx" | "sdvx" | "ddr";
 export type MatchStatus = "scheduled" | "live" | "settled";
 export type SongStatus = "open" | "closed" | "settled";
 export type TeamSide = "a" | "b";
-export type RoundFormat = "single" | "tag" | "megamix";
+export type RoundFormat =
+  | "single"
+  | "single_first_look"
+  | "single_with_first_look"
+  | "tag_score"
+  | "tag_trifecta"
+  | "megamix";
 export type CoinLogType =
   | "initial"
   | "login_bonus"
@@ -20,6 +26,22 @@ export type LegacyStatCategoryType = "theme" | "level";
 export interface Database {
   public: {
     Tables: {
+      game_schedules: {
+        Row: {
+          game_key: string;
+          start_time: string;
+          updated_at: string;
+        };
+        Insert: {
+          game_key: string;
+          start_time: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["game_schedules"]["Insert"]
+        >;
+        Relationships: [];
+      };
       teams: {
         Row: {
           id: string;

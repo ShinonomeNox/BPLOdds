@@ -9,6 +9,8 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_DURATION_SECONDS,
 } from "@/lib/auth/session";
+import { getTodayDateString } from "@/lib/date/today";
+import { getLoginBonusAmount } from "@/lib/coins/login-bonus";
 
 const INITIAL_COINS = 1000;
 const LOGIN_ID_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
@@ -80,14 +82,18 @@ export async function POST(request: Request) {
   }
 
   const passwordHash = await hashPassword(password);
+  const today = getTodayDateString();
+  const bonusAmount = getLoginBonusAmount();
+  const totalCoins = INITIAL_COINS + bonusAmount;
 
   const { data: newUser, error: insertError } = await supabase
     .from("users")
     .insert({
       login_id: loginId,
       password_hash: passwordHash,
-      coins: INITIAL_COINS,
+      coins: totalCoins,
       registered_ip: ip,
+      last_login_bonus_date: today,
     })
     .select("id, login_id")
     .single();
@@ -101,11 +107,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const { error: coinLogError } = await supabase.from("coin_logs").insert({
-    user_id: newUser.id,
-    type: "initial",
-    amount: INITIAL_COINS,
-  });
+  const { error: coinLogError } = await supabase.from("coin_logs").insert([
+    {
+      user_id: newUser.id,
+      type: "initial",
+      amount: INITIAL_COINS,
+    },
+    {
+      user_id: newUser.id,
+      type: "login_bonus",
+      amount: bonusAmount,
+    },
+  ]);
 
   if (coinLogError) {
     return NextResponse.json(
@@ -130,6 +143,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     loginId: newUser.login_id,
-    coins: INITIAL_COINS,
+    coins: totalCoins,
+    bonusAmount,
   });
 }

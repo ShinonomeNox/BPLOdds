@@ -52,6 +52,10 @@ export default async function TeamsPage() {
       <div className="flex flex-col gap-5">
         {[...teamGroups.values()].map((group) => {
           const color = group.teams.find((t) => t.color)?.color ?? null;
+          const representativeTeam =
+            GAME_TITLES.map((gt) => group.teams.find((t) => t.game_title === gt)).find(
+              (t) => !!t,
+            ) ?? group.teams[0];
           return (
             <div
               key={group.name}
@@ -62,8 +66,9 @@ export default async function TeamsPage() {
                   : undefined
               }
             >
-              <div
-                className="px-5 py-3"
+              <Link
+                href={`/teams/${representativeTeam.id}`}
+                className="group flex items-center justify-between px-5 py-3 transition-[filter] hover:brightness-110"
                 style={{
                   backgroundColor: color ?? "var(--surface-hover)",
                 }}
@@ -71,7 +76,10 @@ export default async function TeamsPage() {
                 <h2 className="text-lg font-extrabold text-white drop-shadow-sm">
                   {group.name}
                 </h2>
-              </div>
+                <span className="text-white/70 transition-transform group-hover:translate-x-1">
+                  →
+                </span>
+              </Link>
               <div className="flex flex-col gap-4 p-5">
                 {GAME_TITLES.map((gameTitle) => {
                   const team = group.teams.find(

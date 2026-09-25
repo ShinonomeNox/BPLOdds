@@ -2,13 +2,13 @@
 
 import { useState, type ReactNode } from "react";
 
-export interface BettingTab {
+export interface TabItem {
   key: string;
   label: string;
   content: ReactNode;
 }
 
-export function MatchBettingTabs({ tabs }: { tabs: BettingTab[] }) {
+export function Tabs({ tabs }: { tabs: TabItem[] }) {
   const [activeKey, setActiveKey] = useState(tabs[0]?.key);
 
   return (

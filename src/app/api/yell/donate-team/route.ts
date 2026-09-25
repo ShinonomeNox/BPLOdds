@@ -23,9 +23,13 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  if (typeof amount !== "number" || !Number.isInteger(amount) || amount <= 0) {
+  if (
+    typeof amount !== "number" ||
+    !Number.isInteger(amount) ||
+    amount < 100
+  ) {
     return NextResponse.json(
-      { error: "amountは正の整数で指定してください" },
+      { error: "amountは100以上の整数で指定してください" },
       { status: 400 },
     );
   }

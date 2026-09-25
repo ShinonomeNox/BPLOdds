@@ -61,3 +61,36 @@ export function calculatePariMutuelRates(
 export function calculatePayout(amount: number, rate: number): number {
   return amount * rate;
 }
+
+export interface ApproximateOddsRate {
+  optionId: string;
+  rate: number | null; // null = まだ誰もこのoptionに賭けていない（未賭け）
+  poolAmount: number;
+}
+
+// 現在の賭け状況から、各optionが単独で的中したと仮定した場合の概算オッズを算出する。
+// rate = totalPool / poolOnOption（calculatePariMutuelRatesにwinningOptionIds=[optionId]
+// だけを渡した場合と数学的に同値だが、全option分を1パスで計算できる）。
+export function calculateApproximateOdds(
+  bets: readonly Bet[],
+  optionIds: readonly string[],
+): ApproximateOddsRate[] {
+  const totalPool = bets.reduce((sum, bet) => sum + bet.amount, 0);
+
+  const poolByOptionId = new Map<string, number>();
+  for (const bet of bets) {
+    poolByOptionId.set(
+      bet.optionId,
+      (poolByOptionId.get(bet.optionId) ?? 0) + bet.amount,
+    );
+  }
+
+  return optionIds.map((optionId) => {
+    const poolAmount = poolByOptionId.get(optionId) ?? 0;
+    return {
+      optionId,
+      poolAmount,
+      rate: poolAmount > 0 ? totalPool / poolAmount : null,
+    };
+  });
+}

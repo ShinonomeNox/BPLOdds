@@ -5,7 +5,18 @@ import { createMatchRound } from "@/lib/admin/create-match-round";
 import { ROUND_NUMBER_TO_LABEL } from "@/lib/admin/parse-match-sheet";
 import type { RoundFormat } from "@/types/database";
 
-const ROUND_FORMATS: RoundFormat[] = ["single", "tag", "megamix"];
+const ROUND_FORMATS: RoundFormat[] = [
+  "single",
+  "single_first_look",
+  "single_with_first_look",
+  "tag_score",
+  "tag_trifecta",
+  "megamix",
+];
+
+function requiresFourPlayers(format: RoundFormat): boolean {
+  return format === "tag_score" || format === "tag_trifecta";
+}
 
 interface CreateRoundRequestBody {
   roundNumber?: unknown;
@@ -45,7 +56,7 @@ export async function POST(
     !ROUND_NUMBER_TO_LABEL[roundNumber]
   ) {
     return NextResponse.json(
-      { error: "roundNumberは1〜4の整数で指定してください" },
+      { error: "roundNumberは1〜8、またはFinal相当の値で指定してください" },
       { status: 400 },
     );
   }
@@ -65,14 +76,14 @@ export async function POST(
     );
   }
   if (
-    roundFormat === "tag" &&
+    requiresFourPlayers(roundFormat as RoundFormat) &&
     (typeof playerA2Name !== "string" ||
       typeof playerB2Name !== "string" ||
       !playerA2Name ||
       !playerB2Name)
   ) {
     return NextResponse.json(
-      { error: "タッグバトルにはplayerA2Name, playerB2Nameが必要です" },
+      { error: "このマッチにはplayerA2Name, playerB2Nameが必要です" },
       { status: 400 },
     );
   }

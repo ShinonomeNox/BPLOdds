@@ -3,12 +3,17 @@ import {
   buildMarginBetOptions,
   buildMatchResultBetOptions,
   buildMegamixRawScoreDiffBetOptions,
+  buildSdvxSingleBattleResultBetOptions,
+  buildSingleFirstLookResultBetOptions,
   type BuildableBetOption,
 } from "@/lib/betting/bet-option-builders";
 
 export const ROUND_FORMAT_LABEL_JA: Record<RoundFormat, string> = {
   single: "シングルバトル",
-  tag: "タッグバトル",
+  single_first_look: "シングルバトル初見のみ",
+  single_with_first_look: "シングルバトル+初見",
+  tag_score: "タッグバトル(SDVX)",
+  tag_trifecta: "タッグバトル(DDR)",
   megamix: "メガミックスバトル",
 };
 
@@ -32,23 +37,40 @@ export function buildMatchLevelBetTypeDefs(
   ];
 }
 
-// マッチ（ラウンド、1st/2nd/3rd/4th）単位のベット。
-// シングル/タッグは共通の結果パターン（2タテ・勝ち引き分け・1勝1敗）、
-// メガミックスは生スコア差予想を使う。
+// マッチ（ラウンド、1st/2nd/3rd...）単位のベット（MatchCategory.md準拠）。
+// tag_trifecta（DDRタッグ）はラウンド単位のベットを持たず、
+// 曲単位の3連単のみで構成されるためnullを返す。
 export function buildRoundLevelBetTypeDef(
   format: RoundFormat,
   roundLabel: string,
-): MatchBetTypeDef {
-  if (format === "megamix") {
-    return {
-      typeKey: "megamix_raw_score_diff",
-      label: `${roundLabel}予想（スコア差）`,
-      options: buildMegamixRawScoreDiffBetOptions(),
-    };
+): MatchBetTypeDef | null {
+  switch (format) {
+    case "single":
+    case "tag_score":
+      return {
+        typeKey: "match_result",
+        label: `${roundLabel}予想`,
+        options: buildMatchResultBetOptions(),
+      };
+    case "single_first_look":
+      return {
+        typeKey: "single_first_look_result",
+        label: `${roundLabel}予想`,
+        options: buildSingleFirstLookResultBetOptions(),
+      };
+    case "single_with_first_look":
+      return {
+        typeKey: "sdvx_single_result",
+        label: `${roundLabel}予想`,
+        options: buildSdvxSingleBattleResultBetOptions(),
+      };
+    case "megamix":
+      return {
+        typeKey: "megamix_raw_score_diff",
+        label: `${roundLabel}予想（スコア差）`,
+        options: buildMegamixRawScoreDiffBetOptions(),
+      };
+    case "tag_trifecta":
+      return null;
   }
-  return {
-    typeKey: "match_result",
-    label: `${roundLabel}予想`,
-    options: buildMatchResultBetOptions(),
-  };
 }

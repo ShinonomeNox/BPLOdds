@@ -3,12 +3,19 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+interface LoginResponse {
+  error?: string;
+  bonusAwarded?: boolean;
+  bonusAmount?: number;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [bonusAmount, setBonusAmount] = useState<number | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -21,10 +28,15 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ loginId, password }),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as LoginResponse;
 
       if (!response.ok) {
         setError(data.error ?? "ログインに失敗しました");
+        return;
+      }
+
+      if (data.bonusAwarded && data.bonusAmount) {
+        setBonusAmount(data.bonusAmount);
         return;
       }
 
@@ -33,6 +45,11 @@ export default function LoginPage() {
     } finally {
       setIsPending(false);
     }
+  }
+
+  function handleCloseBonus() {
+    router.push("/");
+    router.refresh();
   }
 
   return (
@@ -67,7 +84,30 @@ export default function LoginPage() {
             ログイン
           </button>
         </form>
+        <p className="mt-4 text-center text-xs text-muted">
+          ※ログインID・パスワードを忘れた場合、復旧はできません。お手数ですが新しいアカウントを作成してください
+        </p>
       </div>
+
+      {bonusAmount !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="card-surface w-full max-w-xs p-6 text-center">
+            <p className="glow-text mb-2 text-lg font-bold text-foreground">
+              ログインボーナス獲得！
+            </p>
+            <p className="mb-4 text-3xl font-extrabold text-accent-cyan">
+              +{bonusAmount.toLocaleString("ja-JP")} EC
+            </p>
+            <button
+              type="button"
+              onClick={handleCloseBonus}
+              className="btn-primary w-full"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

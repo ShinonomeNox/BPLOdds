@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { DonateForm } from "@/components/donate-form";
+import { BackButton } from "@/components/back-button";
 
 export default async function PlayerPage({
   params,
@@ -29,7 +30,11 @@ export default async function PlayerPage({
     { data: legacyStats },
     user,
   ] = await Promise.all([
-    supabase.from("teams").select("name").eq("id", player.team_id).single(),
+    supabase
+      .from("teams")
+      .select("name, color")
+      .eq("id", player.team_id)
+      .single(),
     supabase
       .from("player_yell_points")
       .select("total_points")
@@ -51,26 +56,36 @@ export default async function PlayerPage({
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10 sm:px-6">
-      <div className="card-surface mb-6 flex flex-col items-center gap-4 p-6 text-center sm:p-8">
-        <div>
-          <h1 className="glow-text text-2xl font-bold text-foreground">
+      <BackButton />
+
+      <div className="card-surface mb-6 overflow-hidden text-center">
+        <div
+          className="px-6 py-8 sm:px-8 sm:py-10"
+          style={{ backgroundColor: team?.color ?? "var(--surface-hover)" }}
+        >
+          <h1 className="text-2xl font-extrabold text-white drop-shadow-sm sm:text-3xl">
             {player.name}
           </h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-sm font-semibold text-white/80">
             {team?.name} / {player.game_title.toUpperCase()}
           </p>
         </div>
 
-        <p className="text-sm text-muted">
-          エールポイント
-          <br />
-          <span className="text-3xl font-extrabold text-accent-cyan">
-            {(yellPoints?.total_points ?? 0).toLocaleString("ja-JP")}
-          </span>{" "}
-          pt
-        </p>
+        <div className="flex flex-col items-center gap-4 p-6 sm:p-8">
+          <p className="text-sm text-muted">
+            エールポイント
+            <br />
+            <span
+              className="text-3xl font-extrabold text-accent-cyan"
+              style={team?.color ? { color: team.color } : undefined}
+            >
+              {(yellPoints?.total_points ?? 0).toLocaleString("ja-JP")}
+            </span>{" "}
+            pt
+          </p>
 
-        <DonateForm playerId={player.id} isLoggedIn={!!user} />
+          <DonateForm playerId={player.id} isLoggedIn={!!user} />
+        </div>
       </div>
 
       <div className="flex flex-col gap-4">

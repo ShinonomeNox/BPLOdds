@@ -24,9 +24,13 @@ interface Song {
 export async function SongPanel({
   song,
   participants,
+  teamAName,
+  teamBName,
 }: {
   song: Song;
   participants: Participant[];
+  teamAName: string;
+  teamBName: string;
 }) {
   const supabase = createServiceClient();
   const betTypes = await getBetTypesWithOptions(supabase, { songId: song.id });
@@ -41,7 +45,7 @@ export async function SongPanel({
   return (
     <div className="card-surface flex flex-col gap-3 p-4 sm:p-5">
       <p className="font-medium text-foreground">
-        {song.song_number === 1 ? "Aチーム選曲" : "Bチーム選曲"}
+        {song.song_number === 1 ? `${teamAName}の自選曲` : `${teamBName}の自選曲`}
         {song.theme && `　${song.theme}`}
         {song.level_range && `（Lv.${song.level_range}）`}（status: {song.status}）
       </p>

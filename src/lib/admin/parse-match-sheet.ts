@@ -18,6 +18,7 @@ export interface ParsedGameBlock {
 }
 
 export interface ParsedMatchSheet {
+  gameKey: string;
   teamAName: string;
   teamBName: string;
   blocks: ParsedGameBlock[];
@@ -29,11 +30,19 @@ const GAME_TITLE_MAP: Record<string, GameTitle> = {
   DDR: "ddr",
 };
 
+// "Final"は決勝の特別ラウンド。round_numberは999として扱いソート順を末尾にする。
+export const FINAL_ROUND_NUMBER = 999;
+
 export const ROUND_LABEL_TO_NUMBER: Record<string, number> = {
   "1st": 1,
   "2nd": 2,
   "3rd": 3,
   "4th": 4,
+  "5th": 5,
+  "6th": 6,
+  "7th": 7,
+  "8th": 8,
+  Final: FINAL_ROUND_NUMBER,
 };
 
 export const ROUND_NUMBER_TO_LABEL: Record<number, string> = {
@@ -41,11 +50,20 @@ export const ROUND_NUMBER_TO_LABEL: Record<number, string> = {
   2: "2nd",
   3: "3rd",
   4: "4th",
+  5: "5th",
+  6: "6th",
+  7: "7th",
+  8: "8th",
+  [FINAL_ROUND_NUMBER]: "Final",
 };
 
+// MatchCategory.md準拠の6試合形式
 export const TSV_FORMAT_LABEL_TO_ROUND_FORMAT: Record<string, RoundFormat> = {
   シングルバトル: "single",
-  タッグバトル: "tag",
+  シングルバトル初見のみ: "single_first_look",
+  "シングルバトル+初見": "single_with_first_look",
+  "タッグバトル(SDVX)": "tag_score",
+  "タッグバトル(DDR)": "tag_trifecta",
   メガミックスバトル: "megamix",
 };
 
@@ -57,6 +75,7 @@ export function parseMatchSheet(text: string): ParsedMatchSheet {
     .split("\n")
     .map((line) => line.replace(/\r$/, "").split("\t"));
 
+  let gameKey = "";
   let teamAName = "";
   let teamBName = "";
   const blocks: ParsedGameBlock[] = [];
@@ -68,15 +87,16 @@ export function parseMatchSheet(text: string): ParsedMatchSheet {
     if (row.every((cell) => !cell.trim())) {
       continue;
     }
+    if (first === "Game") {
+      gameKey = (row[1] ?? "").trim().toLowerCase();
+      continue;
+    }
     if (first === "Team A") {
       teamAName = (row[1] ?? "").trim();
       continue;
     }
     if (first === "Team B") {
       teamBName = (row[1] ?? "").trim();
-      continue;
-    }
-    if (first === "Game") {
       continue;
     }
 
@@ -101,7 +121,7 @@ export function parseMatchSheet(text: string): ParsedMatchSheet {
     const roundNumber = ROUND_LABEL_TO_NUMBER[trimmedOrder];
     if (roundNumber === undefined) {
       throw new Error(
-        `${currentBlock.gameTitle.toUpperCase()}: 「${trimmedOrder}」はラウンド表記（1st/2nd/3rd/4th）として認識できません`,
+        `${currentBlock.gameTitle.toUpperCase()}: 「${trimmedOrder}」はラウンド表記（1st〜8th/Final）として認識できません`,
       );
     }
 
@@ -109,7 +129,7 @@ export function parseMatchSheet(text: string): ParsedMatchSheet {
     const roundFormat = TSV_FORMAT_LABEL_TO_ROUND_FORMAT[trimmedFormat];
     if (!roundFormat) {
       throw new Error(
-        `${currentBlock.gameTitle.toUpperCase()} ${trimmedOrder}: 試合形式「${trimmedFormat}」を認識できません（シングルバトル/タッグバトル/メガミックスバトルのいずれかで指定してください）`,
+        `${currentBlock.gameTitle.toUpperCase()} ${trimmedOrder}: 試合形式「${trimmedFormat}」を認識できません（${Object.keys(TSV_FORMAT_LABEL_TO_ROUND_FORMAT).join("/")}のいずれかで指定してください）`,
       );
     }
 
@@ -126,5 +146,5 @@ export function parseMatchSheet(text: string): ParsedMatchSheet {
     });
   }
 
-  return { teamAName, teamBName, blocks };
+  return { gameKey, teamAName, teamBName, blocks };
 }

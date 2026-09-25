@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AmountInput } from "@/components/amount-input";
+
+const MIN_DONATE_AMOUNT = 100;
 
 interface DonateTeamResponse {
   error?: string;
@@ -18,7 +21,7 @@ export function DonateTeamForm({
   isLoggedIn: boolean;
 }) {
   const router = useRouter();
-  const [amount, setAmount] = useState(10);
+  const [amount, setAmount] = useState(MIN_DONATE_AMOUNT);
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -52,25 +55,19 @@ export function DonateTeamForm({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          type="number"
-          min={1}
-          value={amount}
-          onChange={(e) => setAmount(Number(e.target.value))}
-          className="input-base w-24"
-        />
-        <span className="text-xs text-muted">EC</span>
+        <AmountInput value={amount} onChange={setAmount} min={MIN_DONATE_AMOUNT} />
         <button
           type="button"
           onClick={handleDonate}
-          disabled={isPending}
+          disabled={isPending || amount < MIN_DONATE_AMOUNT}
           className="btn-primary text-sm"
         >
           エールを送る
         </button>
       </div>
+      <p className="text-xs text-muted">※最少{MIN_DONATE_AMOUNT}ptから</p>
       {message && <p className="text-xs text-muted">{message}</p>}
     </div>
   );

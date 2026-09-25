@@ -6,7 +6,6 @@ import { LogoutButton } from "@/components/logout-button";
 const NAV_LINKS = [
   { href: "/matches", label: "試合一覧" },
   { href: "/teams", label: "チーム一覧" },
-  { href: "/players", label: "選手一覧" },
 ];
 
 export async function SiteHeader() {

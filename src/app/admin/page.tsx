@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createServiceClient } from "@/lib/supabase/service";
-import { CreateMatchForm } from "@/components/admin/create-match-form";
 import { MatchSheetImportForm } from "@/components/admin/match-sheet-import-form";
 import { StatusBadge } from "@/components/status-badge";
 import { DeleteMatchButton } from "@/components/admin/delete-match-button";
@@ -12,6 +11,7 @@ const MASTER_LINKS = [
   { href: "/admin/songs", label: "課題曲マスタ管理" },
   { href: "/admin/legacy-stats", label: "前シーズン統計管理" },
   { href: "/admin/users", label: "ユーザー管理" },
+  { href: "/admin/game-schedules", label: "試合日程管理" },
 ];
 
 export default async function AdminPage() {
@@ -25,13 +25,10 @@ export default async function AdminPage() {
   }
 
   const supabase = createServiceClient();
-  const [{ data: teams }, { data: matches }] = await Promise.all([
-    supabase.from("teams").select("id, name, game_title").order("name"),
-    supabase
-      .from("matches")
-      .select("id, game_title, status, start_time")
-      .order("start_time", { ascending: false }),
-  ]);
+  const { data: matches } = await supabase
+    .from("matches")
+    .select("id, game_title, status, start_time")
+    .order("start_time", { ascending: false });
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
@@ -50,13 +47,6 @@ export default async function AdminPage() {
             </Link>
           ))}
         </div>
-      </section>
-
-      <section className="card-surface mb-6 p-5 sm:p-6">
-        <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
-          試合を作成
-        </h2>
-        <CreateMatchForm teams={teams ?? []} />
       </section>
 
       <section className="card-surface mb-6 p-5 sm:p-6">

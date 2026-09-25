@@ -8,10 +8,7 @@ import {
   SESSION_DURATION_SECONDS,
 } from "@/lib/auth/session";
 import { getTodayDateString } from "@/lib/date/today";
-import { isMatchDay } from "@/lib/date/match-day";
-
-const LOGIN_BONUS_COINS = 500;
-const LOGIN_BONUS_COINS_MATCH_DAY = 3000;
+import { getLoginBonusAmount } from "@/lib/coins/login-bonus";
 
 interface LoginRequestBody {
   loginId?: unknown;
@@ -52,11 +49,12 @@ export async function POST(request: Request) {
 
   const today = getTodayDateString();
   let coins = user.coins;
+  let bonusAwarded = false;
+  let bonusAmount = 0;
 
   if (user.last_login_bonus_date !== today) {
-    const bonusAmount = isMatchDay()
-      ? LOGIN_BONUS_COINS_MATCH_DAY
-      : LOGIN_BONUS_COINS;
+    bonusAwarded = true;
+    bonusAmount = getLoginBonusAmount();
     coins += bonusAmount;
 
     const { error: updateError } = await supabase
@@ -101,5 +99,10 @@ export async function POST(request: Request) {
     maxAge: SESSION_DURATION_SECONDS,
   });
 
-  return NextResponse.json({ loginId: user.login_id, coins });
+  return NextResponse.json({
+    loginId: user.login_id,
+    coins,
+    bonusAwarded,
+    bonusAmount,
+  });
 }

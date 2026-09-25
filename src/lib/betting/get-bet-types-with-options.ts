@@ -40,3 +40,5 @@ export async function getBetTypesWithOptions(
     options: betOptions.filter((option) => option.bet_type_id === betType.id),
   }));
 }
+
+export type BetType = Awaited<ReturnType<typeof getBetTypesWithOptions>>[number];
