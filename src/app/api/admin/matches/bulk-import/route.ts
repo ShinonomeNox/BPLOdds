@@ -2,16 +2,11 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createServiceClient } from "@/lib/supabase/service";
 import { parseMatchSheet } from "@/lib/admin/parse-match-sheet";
-import {
-  resolveOrCreatePlayer,
-  resolveOrCreateTeam,
-} from "@/lib/admin/resolve-or-create";
-import {
-  buildMatchLevelBetTypeDefs,
-  DEFAULT_MATCH_FORMAT_BY_GAME_TITLE,
-} from "@/lib/betting/match-format";
+import { resolveOrCreateTeam } from "@/lib/admin/resolve-or-create";
+import { createMatchRound } from "@/lib/admin/create-match-round";
+import { buildMatchLevelBetTypeDefs } from "@/lib/betting/match-format";
 import { resolveTeamIdBySide } from "@/lib/betting/side-to-team";
-import type { GameTitle, TeamSide } from "@/types/database";
+import type { GameTitle } from "@/types/database";
 
 interface BulkImportRequestBody {
   text?: unknown;
@@ -40,7 +35,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = parseMatchSheet(text);
+  let parsed;
+  try {
+    parsed = parseMatchSheet(text);
+  } catch (parseError) {
+    return NextResponse.json(
+      {
+        error:
+          parseError instanceof Error ? parseError.message : "パースに失敗しました",
+      },
+      { status: 400 },
+    );
+  }
+
   if (!parsed.teamAName || !parsed.teamBName) {
     return NextResponse.json(
       { error: "「Team A」「Team B」の行が見つかりません" },
@@ -90,9 +97,7 @@ export async function POST(request: Request) {
         continue;
       }
 
-      const matchFormat = DEFAULT_MATCH_FORMAT_BY_GAME_TITLE[block.gameTitle];
-      const betTypeDefs = buildMatchLevelBetTypeDefs(matchFormat);
-
+      const betTypeDefs = buildMatchLevelBetTypeDefs(block.gameTitle);
       for (const def of betTypeDefs) {
         const { data: betType, error: betTypeError } = await supabase
           .from("bet_types")
@@ -128,57 +133,27 @@ export async function POST(request: Request) {
         }
       }
 
-      const playerSideByName = new Map<string, TeamSide>();
       for (const song of block.songs) {
-        if (song.playerA) playerSideByName.set(song.playerA, "a");
-        if (song.playerA2) playerSideByName.set(song.playerA2, "a");
-        if (song.playerB) playerSideByName.set(song.playerB, "b");
-        if (song.playerB2) playerSideByName.set(song.playerB2, "b");
-      }
-
-      const participantRows: { player_id: string; team_side: TeamSide }[] =
-        [];
-      for (const [playerName, side] of playerSideByName) {
-        const teamId = side === "a" ? teamAId : teamBId;
-        const playerId = await resolveOrCreatePlayer(
-          supabase,
-          playerName,
-          block.gameTitle,
-          teamId,
-        );
-        participantRows.push({ player_id: playerId, team_side: side });
-      }
-
-      if (participantRows.length > 0) {
-        const { error: participantsError } = await supabase
-          .from("match_participants")
-          .insert(
-            participantRows.map((p) => ({
-              match_id: match.id,
-              player_id: p.player_id,
-              team_side: p.team_side,
-            })),
-          );
-        if (participantsError) {
+        try {
+          await createMatchRound(supabase, {
+            matchId: match.id,
+            gameTitle: block.gameTitle,
+            teamAId,
+            teamBId,
+            roundNumber: song.roundNumber,
+            roundLabel: song.order,
+            roundFormat: song.roundFormat,
+            theme: song.theme || null,
+            levelRange: song.levelRange || null,
+            playerAName: song.playerA,
+            playerBName: song.playerB,
+            playerA2Name: song.playerA2,
+            playerB2Name: song.playerB2,
+          });
+        } catch (roundError) {
           errors.push(
-            `${gameLabel}: 出場選手の登録に失敗しました: ${participantsError.message}`,
+            `${gameLabel}: ${roundError instanceof Error ? roundError.message : "unknown error"}`,
           );
-        }
-      }
-
-      if (block.songs.length > 0) {
-        const { error: songsError } = await supabase
-          .from("tag_battle_songs")
-          .insert(
-            block.songs.map((song, index) => ({
-              match_id: match.id,
-              song_number: index + 1,
-              theme: song.theme || null,
-              level_range: song.levelRange || null,
-            })),
-          );
-        if (songsError) {
-          errors.push(`${gameLabel}: 曲の登録に失敗しました: ${songsError.message}`);
         }
       }
 

@@ -4,12 +4,14 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getBetTypesWithOptions } from "@/lib/betting/get-bet-types-with-options";
 import { MatchStatusButtons } from "@/components/admin/match-status-buttons";
 import { AddParticipantsForm } from "@/components/admin/add-participants-form";
-import { AddSongForm } from "@/components/admin/add-song-form";
-import { SongPanel } from "@/components/admin/song-panel";
+import { AddRoundForm } from "@/components/admin/add-round-form";
+import { RoundPanel } from "@/components/admin/round-panel";
 import { BetTypeSettlePanel } from "@/components/admin/bet-type-settle-panel";
 import { StatusBadge } from "@/components/status-badge";
 import { StrategyCardPanel } from "@/components/admin/strategy-card-panel";
 import { STRATEGY_CARD_LIMIT_PER_TEAM } from "@/lib/betting/strategy-cards";
+import { EditMatchForm } from "@/components/admin/edit-match-form";
+import { DeleteMatchButton } from "@/components/admin/delete-match-button";
 
 export default async function AdminMatchPage({
   params,
@@ -42,8 +44,10 @@ export default async function AdminMatchPage({
     { data: participants },
     { data: players },
     { data: songs },
+    { data: rounds },
     { data: teamA },
     { data: teamB },
+    { data: allTeams },
     { data: matchUsages },
   ] = await Promise.all([
     supabase
@@ -60,8 +64,18 @@ export default async function AdminMatchPage({
       .select("*")
       .eq("match_id", matchId)
       .order("song_number"),
+    supabase
+      .from("match_rounds")
+      .select("*")
+      .eq("match_id", matchId)
+      .order("round_number"),
     supabase.from("teams").select("id, name").eq("id", match.team_a_id).single(),
     supabase.from("teams").select("id, name").eq("id", match.team_b_id).single(),
+    supabase
+      .from("teams")
+      .select("id, name, game_title")
+      .eq("game_title", match.game_title)
+      .order("name"),
     supabase
       .from("strategy_card_usages")
       .select("id, team_id, round_label, target_song_id, note")
@@ -105,9 +119,12 @@ export default async function AdminMatchPage({
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
       <div className="card-surface mb-6 p-5 sm:p-6">
-        <h1 className="text-xl font-bold text-foreground">
-          {match.game_title.toUpperCase()} 試合詳細
-        </h1>
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="text-xl font-bold text-foreground">
+            {match.game_title.toUpperCase()} 試合詳細
+          </h1>
+          <DeleteMatchButton matchId={match.id} />
+        </div>
         <p className="mt-1 flex items-center gap-2 text-sm text-muted">
           開始: {new Date(match.start_time).toLocaleString("ja-JP")}
           <StatusBadge status={match.status} />
@@ -117,9 +134,30 @@ export default async function AdminMatchPage({
       <div className="flex flex-col gap-6">
         <section className="card-surface p-5 sm:p-6">
           <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
+            試合編集
+          </h2>
+          <EditMatchForm
+            matchId={match.id}
+            teams={allTeams ?? []}
+            initialTeamAId={match.team_a_id}
+            initialTeamBId={match.team_b_id}
+            initialStartTime={match.start_time}
+          />
+        </section>
+
+        <section className="card-surface p-5 sm:p-6">
+          <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
             試合ステータス
           </h2>
-          <MatchStatusButtons matchId={match.id} currentStatus={match.status} />
+          <MatchStatusButtons
+            matchId={match.id}
+            currentStatus={match.status}
+            teamAId={match.team_a_id}
+            teamAName={teamNameById.get(match.team_a_id) ?? "?"}
+            teamBId={match.team_b_id}
+            teamBName={teamNameById.get(match.team_b_id) ?? "?"}
+            currentWinnerTeamId={match.winner_team_id}
+          />
         </section>
 
         <section className="card-surface p-5 sm:p-6">
@@ -196,15 +234,16 @@ export default async function AdminMatchPage({
 
         <section className="flex flex-col gap-4">
           <h2 className="text-sm font-bold tracking-wide text-accent-purple">
-            曲（タッグバトル等）
+            マッチ（1st/2nd/3rd...）
           </h2>
-          {(songs ?? []).map((song) => (
-            <SongPanel key={song.id} song={song} participants={participantList} />
+          {(rounds ?? []).map((round) => (
+            <RoundPanel
+              key={round.id}
+              round={round}
+              participants={participantList}
+            />
           ))}
-          <AddSongForm
-            matchId={match.id}
-            participantCount={participantList.length}
-          />
+          <AddRoundForm matchId={match.id} />
         </section>
       </div>
     </main>

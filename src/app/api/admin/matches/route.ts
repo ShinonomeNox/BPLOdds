@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createServiceClient } from "@/lib/supabase/service";
-import {
-  buildMatchLevelBetTypeDefs,
-  MATCH_FORMAT_GAME_TITLE,
-  MATCH_FORMATS,
-  type MatchFormat,
-} from "@/lib/betting/match-format";
+import { buildMatchLevelBetTypeDefs } from "@/lib/betting/match-format";
 import { resolveTeamIdBySide } from "@/lib/betting/side-to-team";
+import type { GameTitle } from "@/types/database";
+
+const GAME_TITLES: GameTitle[] = ["iidx", "sdvx", "ddr"];
 
 interface CreateMatchRequestBody {
-  matchFormat?: unknown;
+  gameTitle?: unknown;
   teamAId?: unknown;
   teamBId?: unknown;
   startTime?: unknown;
@@ -45,16 +43,14 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as CreateMatchRequestBody;
-  const { matchFormat, teamAId, teamBId, startTime } = body;
+  const { gameTitle, teamAId, teamBId, startTime } = body;
 
   if (
-    typeof matchFormat !== "string" ||
-    !MATCH_FORMATS.includes(matchFormat as MatchFormat)
+    typeof gameTitle !== "string" ||
+    !GAME_TITLES.includes(gameTitle as GameTitle)
   ) {
     return NextResponse.json(
-      {
-        error: `matchFormatは${MATCH_FORMATS.join("/")}のいずれかで指定してください`,
-      },
+      { error: `gameTitleは${GAME_TITLES.join("/")}のいずれかで指定してください` },
       { status: 400 },
     );
   }
@@ -72,12 +68,11 @@ export async function POST(request: Request) {
   }
 
   const supabase = createServiceClient();
-  const gameTitle = MATCH_FORMAT_GAME_TITLE[matchFormat as MatchFormat];
 
   const { data: match, error: matchError } = await supabase
     .from("matches")
     .insert({
-      game_title: gameTitle,
+      game_title: gameTitle as GameTitle,
       team_a_id: teamAId,
       team_b_id: teamBId,
       start_time: startTime,
@@ -94,7 +89,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const betTypeDefs = buildMatchLevelBetTypeDefs(matchFormat as MatchFormat);
+  const betTypeDefs = buildMatchLevelBetTypeDefs(gameTitle as GameTitle);
 
   for (const def of betTypeDefs) {
     const { data: betType, error: betTypeError } = await supabase

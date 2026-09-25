@@ -10,7 +10,7 @@ import {
   SESSION_DURATION_SECONDS,
 } from "@/lib/auth/session";
 
-const INITIAL_COINS = 200;
+const INITIAL_COINS = 1000;
 const LOGIN_ID_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
 // 新規ドメインはGoogle側の行動データが少なく、実際のユーザー操作でも
 // スコアが低めに出ることがあるため、標準的な0.5より緩めに設定している。

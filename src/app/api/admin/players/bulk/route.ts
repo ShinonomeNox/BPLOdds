@@ -42,9 +42,22 @@ export async function POST(request: Request) {
     teams.map((t) => [`${t.name}|${t.game_title}`, t]),
   );
   const rows = parseBulkRows(text);
-  const validRows: { name: string; team_id: string; game_title: GameTitle }[] =
-    [];
+  const validRows: {
+    name: string;
+    team_id: string;
+    game_title: GameTitle;
+    display_order: number;
+  }[] = [];
   const errors: BulkRowError[] = [];
+
+  const { data: existingPlayers } = await supabase
+    .from("players")
+    .select("team_id, display_order");
+  const nextOrderByTeamId = new Map<string, number>();
+  for (const p of existingPlayers ?? []) {
+    const current = nextOrderByTeamId.get(p.team_id) ?? 0;
+    nextOrderByTeamId.set(p.team_id, Math.max(current, p.display_order ?? 0));
+  }
 
   rows.forEach((row, index) => {
     const [teamName, gameTitleRaw, name] = row;
@@ -72,10 +85,13 @@ export async function POST(request: Request) {
       });
       return;
     }
+    const nextOrder = (nextOrderByTeamId.get(team.id) ?? 0) + 1;
+    nextOrderByTeamId.set(team.id, nextOrder);
     validRows.push({
       name,
       team_id: team.id,
       game_title: team.game_title,
+      display_order: nextOrder,
     });
   });
 

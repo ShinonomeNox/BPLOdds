@@ -10,43 +10,25 @@ const STATUSES: { value: MatchStatus; label: string }[] = [
   { value: "settled", label: "終了" },
 ];
 
-export function MatchStatusButtons({
-  matchId,
+export function RoundStatusButtons({
+  roundId,
   currentStatus,
-  teamAId,
-  teamAName,
-  teamBId,
-  teamBName,
-  currentWinnerTeamId,
 }: {
-  matchId: string;
+  roundId: string;
   currentStatus: MatchStatus;
-  teamAId: string;
-  teamAName: string;
-  teamBId: string;
-  teamBName: string;
-  currentWinnerTeamId: string | null;
 }) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [winnerTeamId, setWinnerTeamId] = useState(currentWinnerTeamId ?? "");
 
   async function updateStatus(status: MatchStatus) {
-    if (status === "settled" && !winnerTeamId) {
-      setError("終了にする前に勝ちチームを選択してください");
-      return;
-    }
     setIsPending(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/matches/${matchId}`, {
+      const res = await fetch(`/api/admin/rounds/${roundId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status,
-          ...(status === "settled" ? { winnerTeamId } : {}),
-        }),
+        body: JSON.stringify({ status }),
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
@@ -60,7 +42,7 @@ export function MatchStatusButtons({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2">
         {STATUSES.map(({ value, label }) => (
           <button
@@ -68,7 +50,7 @@ export function MatchStatusButtons({
             type="button"
             disabled={isPending || currentStatus === value}
             onClick={() => updateStatus(value)}
-            className={`rounded-lg border px-4 py-3 text-sm font-semibold transition-colors disabled:opacity-40 ${
+            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-40 ${
               currentStatus === value
                 ? "border-accent-cyan bg-accent-cyan/10 text-accent-cyan"
                 : "border-border text-foreground hover:border-accent-cyan"
@@ -78,18 +60,6 @@ export function MatchStatusButtons({
           </button>
         ))}
       </div>
-      <label className="flex items-center gap-2 text-sm">
-        勝ちチーム
-        <select
-          value={winnerTeamId}
-          onChange={(e) => setWinnerTeamId(e.target.value)}
-          className="input-base py-1"
-        >
-          <option value="">未確定</option>
-          <option value={teamAId}>{teamAName}</option>
-          <option value={teamBId}>{teamBName}</option>
-        </select>
-      </label>
       {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );

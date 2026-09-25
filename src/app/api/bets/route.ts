@@ -22,9 +22,14 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  if (typeof amount !== "number" || !Number.isInteger(amount) || amount <= 0) {
+  if (
+    typeof amount !== "number" ||
+    !Number.isInteger(amount) ||
+    amount <= 0 ||
+    amount % 10 !== 0
+  ) {
     return NextResponse.json(
-      { error: "amountは正の整数で指定してください" },
+      { error: "amountは10の倍数の正の整数で指定してください" },
       { status: 400 },
     );
   }

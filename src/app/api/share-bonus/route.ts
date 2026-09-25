@@ -5,7 +5,7 @@ import { getTodayDateString } from "@/lib/date/today";
 
 // 実際の投稿有無はXの公開APIでは検証できないため、
 // 「シェアボタンを押した」ことをそのままトリガーに1日1回付与する（性善説運用）。
-const SHARE_BONUS_COINS = 10;
+const SHARE_BONUS_COINS = 1500;
 
 export async function POST() {
   const user = await getCurrentUser();

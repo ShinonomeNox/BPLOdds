@@ -5,6 +5,7 @@ export type GameTitle = "iidx" | "sdvx" | "ddr";
 export type MatchStatus = "scheduled" | "live" | "settled";
 export type SongStatus = "open" | "closed" | "settled";
 export type TeamSide = "a" | "b";
+export type RoundFormat = "single" | "tag" | "megamix";
 export type CoinLogType =
   | "initial"
   | "login_bonus"
@@ -13,7 +14,7 @@ export type CoinLogType =
   | "payout"
   | "yell_donation"
   | "admin_adjust";
-export type PayoutStatus = "pending" | "won" | "lost";
+export type PayoutStatus = "pending" | "won" | "lost" | "voided";
 export type LegacyStatCategoryType = "theme" | "level";
 
 export interface Database {
@@ -43,6 +44,7 @@ export interface Database {
           name: string;
           team_id: string;
           game_title: GameTitle;
+          display_order: number | null;
           created_at: string;
         };
         Insert: {
@@ -50,6 +52,7 @@ export interface Database {
           name: string;
           team_id: string;
           game_title: GameTitle;
+          display_order?: number | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["players"]["Insert"]>;
@@ -151,6 +154,7 @@ export interface Database {
           team_b_id: string;
           status: MatchStatus;
           start_time: string;
+          winner_team_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -160,6 +164,7 @@ export interface Database {
           team_b_id: string;
           status?: MatchStatus;
           start_time: string;
+          winner_team_id?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["matches"]["Insert"]>;
@@ -169,6 +174,7 @@ export interface Database {
         Row: {
           id: string;
           match_id: string;
+          round_id: string | null;
           song_id: string | null;
           song_number: number;
           status: SongStatus;
@@ -178,6 +184,7 @@ export interface Database {
         Insert: {
           id?: string;
           match_id: string;
+          round_id?: string | null;
           song_id?: string | null;
           song_number: number;
           status?: SongStatus;
@@ -186,6 +193,42 @@ export interface Database {
         };
         Update: Partial<
           Database["public"]["Tables"]["tag_battle_songs"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      match_rounds: {
+        Row: {
+          id: string;
+          match_id: string;
+          round_number: number;
+          round_label: string;
+          round_format: RoundFormat;
+          theme: string | null;
+          level_range: string | null;
+          player_a_id: string | null;
+          player_b_id: string | null;
+          player_a2_id: string | null;
+          player_b2_id: string | null;
+          status: MatchStatus;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          match_id: string;
+          round_number: number;
+          round_label: string;
+          round_format: RoundFormat;
+          theme?: string | null;
+          level_range?: string | null;
+          player_a_id?: string | null;
+          player_b_id?: string | null;
+          player_a2_id?: string | null;
+          player_b2_id?: string | null;
+          status?: MatchStatus;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["match_rounds"]["Insert"]
         >;
         Relationships: [];
       };
@@ -231,6 +274,7 @@ export interface Database {
         Row: {
           id: string;
           match_id: string | null;
+          round_id: string | null;
           song_id: string | null;
           type_key: string;
           label: string;
@@ -239,6 +283,7 @@ export interface Database {
         Insert: {
           id?: string;
           match_id?: string | null;
+          round_id?: string | null;
           song_id?: string | null;
           type_key: string;
           label: string;

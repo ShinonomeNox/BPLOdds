@@ -5,7 +5,10 @@ import { getBetTypesWithOptions } from "@/lib/betting/get-bet-types-with-options
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { BetForm } from "@/components/bet-form";
 import { MatchRealtimeStatus } from "@/components/realtime/match-realtime-status";
+import { RoundRealtimeStatus } from "@/components/realtime/round-realtime-status";
 import { SongRealtimeStatus } from "@/components/realtime/song-realtime-status";
+import { MatchBettingTabs, type BettingTab } from "@/components/match-betting-tabs";
+import { ROUND_FORMAT_LABEL_JA } from "@/lib/betting/match-format";
 
 export default async function MatchPage({
   params,
@@ -28,12 +31,19 @@ export default async function MatchPage({
   const [
     { data: teamA },
     { data: teamB },
+    { data: rounds },
     { data: songs },
     { data: participants },
     { data: strategyCardUsages },
+    user,
   ] = await Promise.all([
     supabase.from("teams").select("name").eq("id", match.team_a_id).single(),
     supabase.from("teams").select("name").eq("id", match.team_b_id).single(),
+    supabase
+      .from("match_rounds")
+      .select("*")
+      .eq("match_id", id)
+      .order("round_number"),
     supabase
       .from("tag_battle_songs")
       .select("*")
@@ -47,6 +57,7 @@ export default async function MatchPage({
       .from("strategy_card_usages")
       .select("id, team_id, round_label, target_song_id, note")
       .eq("match_id", id),
+    getCurrentUser(),
   ]);
 
   const teamNameById = new Map([
@@ -60,11 +71,6 @@ export default async function MatchPage({
     ]),
   );
 
-  const [betTypes, user] = await Promise.all([
-    getBetTypesWithOptions(supabase, { matchId: id }),
-    getCurrentUser(),
-  ]);
-
   const { data: players } = await supabase
     .from("players")
     .select("id, name")
@@ -76,11 +82,136 @@ export default async function MatchPage({
     );
   const playerNameById = new Map((players ?? []).map((p) => [p.id, p.name]));
 
-  const songBetTypesList = await Promise.all(
-    (songs ?? []).map((song) =>
-      getBetTypesWithOptions(supabase, { songId: song.id }),
-    ),
+  const marginBetTypes = await getBetTypesWithOptions(supabase, {
+    matchId: id,
+  });
+
+  const roundList = rounds ?? [];
+  const songsByRoundId = new Map<string, NonNullable<typeof songs>>();
+  for (const song of songs ?? []) {
+    if (!song.round_id) continue;
+    const list = songsByRoundId.get(song.round_id) ?? [];
+    list.push(song);
+    songsByRoundId.set(song.round_id, list);
+  }
+
+  const roundBetTypesList = await Promise.all(
+    roundList.map((round) => getBetTypesWithOptions(supabase, { roundId: round.id })),
   );
+  const roundSongBetTypesByRoundId = new Map<
+    string,
+    Awaited<ReturnType<typeof getBetTypesWithOptions>>[]
+  >();
+  for (const round of roundList) {
+    const roundSongs = songsByRoundId.get(round.id) ?? [];
+    const songBetTypesList = await Promise.all(
+      roundSongs.map((song) => getBetTypesWithOptions(supabase, { songId: song.id })),
+    );
+    roundSongBetTypesByRoundId.set(round.id, songBetTypesList);
+  }
+
+  const tabs: BettingTab[] = [
+    {
+      key: "margin",
+      label: "点差予想",
+      content: (
+        <>
+          {marginBetTypes.map((betType) => (
+            <div key={betType.id} className="card-surface p-4 sm:p-5">
+              <p className="mb-2 font-semibold text-foreground">{betType.label}</p>
+              {betType.options.map((option) => (
+                <BetForm
+                  key={option.id}
+                  betOptionId={option.id}
+                  label={option.label}
+                  isLoggedIn={!!user}
+                />
+              ))}
+            </div>
+          ))}
+        </>
+      ),
+    },
+    ...roundList.map((round, index) => {
+      const roundSongs = songsByRoundId.get(round.id) ?? [];
+      const songBetTypesList = roundSongBetTypesByRoundId.get(round.id) ?? [];
+      const playerAName = playerNameById.get(round.player_a_id ?? "") ?? "?";
+      const playerBName = playerNameById.get(round.player_b_id ?? "") ?? "?";
+      const playerA2Name = round.player_a2_id
+        ? (playerNameById.get(round.player_a2_id) ?? "?")
+        : null;
+      const playerB2Name = round.player_b2_id
+        ? (playerNameById.get(round.player_b2_id) ?? "?")
+        : null;
+
+      return {
+        key: round.id,
+        label: `${round.round_label}予想`,
+        content: (
+          <>
+            <div className="card-surface p-4 sm:p-5">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="font-semibold text-foreground">
+                  {playerAName}
+                  {playerA2Name && ` / ${playerA2Name}`}
+                  <span className="text-muted"> vs </span>
+                  {playerBName}
+                  {playerB2Name && ` / ${playerB2Name}`}
+                </p>
+                <RoundRealtimeStatus roundId={round.id} initialStatus={round.status} />
+              </div>
+              <p className="mb-2 text-xs text-muted">
+                {ROUND_FORMAT_LABEL_JA[round.round_format]}
+                {round.theme && `　${round.theme}`}
+                {round.level_range && `（Lv.${round.level_range}）`}
+              </p>
+            </div>
+
+            {roundBetTypesList[index].map((betType) => (
+              <div key={betType.id} className="card-surface p-4 sm:p-5">
+                <p className="mb-2 font-semibold text-foreground">{betType.label}</p>
+                {betType.options.map((option) => (
+                  <BetForm
+                    key={option.id}
+                    betOptionId={option.id}
+                    label={option.label}
+                    isLoggedIn={!!user}
+                  />
+                ))}
+              </div>
+            ))}
+
+            {roundSongs.map((song, songIndex) => (
+              <div key={song.id} className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-foreground">
+                    {songLabelById.get(song.id) ??
+                      (song.song_number === 1 ? "Aチーム選曲" : "Bチーム選曲")}
+                  </p>
+                  <SongRealtimeStatus songId={song.id} initialStatus={song.status} />
+                </div>
+                {songBetTypesList[songIndex].map((betType) => (
+                  <div key={betType.id} className="card-surface p-4 sm:p-5">
+                    <p className="mb-2 text-sm font-semibold text-foreground">
+                      {betType.label}
+                    </p>
+                    {betType.options.map((option) => (
+                      <BetForm
+                        key={option.id}
+                        betOptionId={option.id}
+                        label={option.label}
+                        isLoggedIn={!!user}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </>
+        ),
+      };
+    }),
+  ];
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10 sm:px-6">
@@ -148,56 +279,7 @@ export default async function MatchPage({
         )}
       </div>
 
-      <div className="flex flex-col gap-4">
-        {betTypes.map((betType) => (
-          <div key={betType.id} className="card-surface p-4 sm:p-5">
-            <p className="mb-2 font-semibold text-foreground">
-              {betType.label}
-            </p>
-            {betType.options.map((option) => (
-              <BetForm
-                key={option.id}
-                betOptionId={option.id}
-                label={option.label}
-                isLoggedIn={!!user}
-              />
-            ))}
-          </div>
-        ))}
-
-        {(songs ?? []).map((song, index) => (
-          <div key={song.id} className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-foreground">
-                  曲{song.song_number}
-                  {song.theme && `　${song.theme}`}
-                  {song.level_range && `（Lv.${song.level_range}）`}
-                </p>
-              </div>
-              <SongRealtimeStatus
-                songId={song.id}
-                initialStatus={song.status}
-              />
-            </div>
-            {songBetTypesList[index].map((betType) => (
-              <div key={betType.id} className="card-surface p-4 sm:p-5">
-                <p className="mb-2 text-sm font-semibold text-foreground">
-                  {betType.label}
-                </p>
-                {betType.options.map((option) => (
-                  <BetForm
-                    key={option.id}
-                    betOptionId={option.id}
-                    label={option.label}
-                    isLoggedIn={!!user}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+      <MatchBettingTabs tabs={tabs} />
     </main>
   );
 }

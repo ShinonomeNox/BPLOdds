@@ -1,40 +1,15 @@
-import type { GameTitle } from "@/types/database";
+import type { GameTitle, RoundFormat } from "@/types/database";
 import {
   buildMarginBetOptions,
   buildMatchResultBetOptions,
   buildMegamixRawScoreDiffBetOptions,
-  buildSdvxSingleBattleResultBetOptions,
   type BuildableBetOption,
 } from "@/lib/betting/bet-option-builders";
 
-export const MATCH_FORMATS = [
-  "iidx_standard",
-  "ddr_single",
-  "ddr_tag",
-  "sdvx_tag",
-  "sdvx_single",
-  "sdvx_megamix",
-] as const;
-export type MatchFormat = (typeof MATCH_FORMATS)[number];
-
-export const MATCH_FORMAT_GAME_TITLE: Record<MatchFormat, GameTitle> = {
-  iidx_standard: "iidx",
-  ddr_single: "ddr",
-  ddr_tag: "ddr",
-  sdvx_tag: "sdvx",
-  sdvx_single: "sdvx",
-  sdvx_megamix: "sdvx",
-};
-
-// 対戦カード一括インポート等、機種から対戦形式を自動判定したい場合のデフォルト。
-// DDR/SDVXはタッグ、IIDXはシングルを標準とする。
-export const DEFAULT_MATCH_FORMAT_BY_GAME_TITLE: Record<
-  GameTitle,
-  MatchFormat
-> = {
-  ddr: "ddr_tag",
-  sdvx: "sdvx_tag",
-  iidx: "iidx_standard",
+export const ROUND_FORMAT_LABEL_JA: Record<RoundFormat, string> = {
+  single: "シングルバトル",
+  tag: "タッグバトル",
+  megamix: "メガミックスバトル",
 };
 
 export interface MatchBetTypeDef {
@@ -43,45 +18,37 @@ export interface MatchBetTypeDef {
   options: BuildableBetOption[];
 }
 
-// 試合作成時点でmatch単位のベットを生成する対戦形式のみここで定義する。
-// DDRタッグのように曲単位でしかベットが発生しない形式は空配列を返し、
-// 3連単・順位配点ベットは曲登録API（/api/admin/matches/[id]/songs）で生成する。
+// 試合全体（対戦カード）単位のベットは点差予想のみ。
+// 「試合の勝敗（2択）」は行わず、点差レンジでの勝敗予想に一本化する。
 export function buildMatchLevelBetTypeDefs(
-  format: MatchFormat,
+  gameTitle: GameTitle,
 ): MatchBetTypeDef[] {
-  switch (format) {
-    case "iidx_standard":
-    case "ddr_single":
-    case "sdvx_tag":
-      return [
-        {
-          typeKey: "team_margin",
-          label: "点差予想",
-          options: buildMarginBetOptions(MATCH_FORMAT_GAME_TITLE[format]),
-        },
-        {
-          typeKey: "match_result",
-          label: "試合結果",
-          options: buildMatchResultBetOptions(),
-        },
-      ];
-    case "sdvx_single":
-      return [
-        {
-          typeKey: "sdvx_single_result",
-          label: "試合結果（3曲）",
-          options: buildSdvxSingleBattleResultBetOptions(),
-        },
-      ];
-    case "sdvx_megamix":
-      return [
-        {
-          typeKey: "megamix_raw_score_diff",
-          label: "生スコア差予想",
-          options: buildMegamixRawScoreDiffBetOptions(),
-        },
-      ];
-    case "ddr_tag":
-      return [];
+  return [
+    {
+      typeKey: "team_margin",
+      label: "点差予想",
+      options: buildMarginBetOptions(gameTitle),
+    },
+  ];
+}
+
+// マッチ（ラウンド、1st/2nd/3rd/4th）単位のベット。
+// シングル/タッグは共通の結果パターン（2タテ・勝ち引き分け・1勝1敗）、
+// メガミックスは生スコア差予想を使う。
+export function buildRoundLevelBetTypeDef(
+  format: RoundFormat,
+  roundLabel: string,
+): MatchBetTypeDef {
+  if (format === "megamix") {
+    return {
+      typeKey: "megamix_raw_score_diff",
+      label: `${roundLabel}予想（スコア差）`,
+      options: buildMegamixRawScoreDiffBetOptions(),
+    };
   }
+  return {
+    typeKey: "match_result",
+    label: `${roundLabel}予想`,
+    options: buildMatchResultBetOptions(),
+  };
 }

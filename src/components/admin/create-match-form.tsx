@@ -2,16 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { MATCH_FORMATS, type MatchFormat } from "@/lib/betting/match-format";
+import type { GameTitle } from "@/types/database";
 
-const MATCH_FORMAT_LABEL: Record<MatchFormat, string> = {
-  iidx_standard: "IIDX（2曲勝負）",
-  ddr_single: "DDRシングル",
-  ddr_tag: "DDRタッグ",
-  sdvx_tag: "SDVXタッグ",
-  sdvx_single: "SDVXシングル（3曲）",
-  sdvx_megamix: "SDVXメガミックス（1st match）",
-};
+const GAME_TITLES: GameTitle[] = ["iidx", "sdvx", "ddr"];
 
 interface Team {
   id: string;
@@ -21,7 +14,7 @@ interface Team {
 
 export function CreateMatchForm({ teams }: { teams: Team[] }) {
   const router = useRouter();
-  const [matchFormat, setMatchFormat] = useState<MatchFormat>("iidx_standard");
+  const [gameTitle, setGameTitle] = useState<GameTitle>("iidx");
   const [teamAId, setTeamAId] = useState("");
   const [teamBId, setTeamBId] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -37,7 +30,7 @@ export function CreateMatchForm({ teams }: { teams: Team[] }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          matchFormat,
+          gameTitle,
           teamAId,
           teamBId,
           startTime: new Date(startTime).toISOString(),
@@ -57,15 +50,15 @@ export function CreateMatchForm({ teams }: { teams: Team[] }) {
   return (
     <form onSubmit={handleSubmit} className="flex max-w-md flex-col gap-3">
       <label className="flex flex-col gap-1">
-        <span className="text-sm text-muted">対戦形式</span>
+        <span className="text-sm text-muted">機種</span>
         <select
-          value={matchFormat}
-          onChange={(e) => setMatchFormat(e.target.value as MatchFormat)}
+          value={gameTitle}
+          onChange={(e) => setGameTitle(e.target.value as GameTitle)}
           className="input-base"
         >
-          {MATCH_FORMATS.map((format) => (
-            <option key={format} value={format}>
-              {MATCH_FORMAT_LABEL[format]}
+          {GAME_TITLES.map((title) => (
+            <option key={title} value={title}>
+              {title.toUpperCase()}
             </option>
           ))}
         </select>

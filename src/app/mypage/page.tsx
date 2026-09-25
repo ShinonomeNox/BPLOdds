@@ -7,6 +7,7 @@ const PAYOUT_STATUS_LABEL: Record<PayoutStatus, string> = {
   pending: "結果待ち",
   won: "的中",
   lost: "はずれ",
+  voided: "取消（返金済み）",
 };
 
 const COIN_LOG_TYPE_LABEL: Record<CoinLogType, string> = {

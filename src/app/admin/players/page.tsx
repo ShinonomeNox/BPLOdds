@@ -21,6 +21,8 @@ export default async function AdminPlayersPage() {
     supabase
       .from("players")
       .select("id, name, game_title, team_id")
+      .order("team_id")
+      .order("display_order", { ascending: true, nullsFirst: false })
       .order("name"),
   ]);
 

@@ -62,7 +62,8 @@ export function BetForm({
         <div className="flex items-center gap-2">
           <input
             type="number"
-            min={1}
+            min={10}
+            step={10}
             value={amount}
             onChange={(e) => setAmount(Number(e.target.value))}
             className="input-base w-20 py-1 text-sm"

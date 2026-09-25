@@ -44,12 +44,21 @@ export async function POST(request: Request) {
     );
   }
 
+  const { data: lastPlayer } = await supabase
+    .from("players")
+    .select("display_order")
+    .eq("team_id", teamId)
+    .order("display_order", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
   const { data: player, error } = await supabase
     .from("players")
     .insert({
       name: name.trim(),
       team_id: teamId,
       game_title: team.game_title,
+      display_order: (lastPlayer?.display_order ?? 0) + 1,
     })
     .select("*")
     .single();

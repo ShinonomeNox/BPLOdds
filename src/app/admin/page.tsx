@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { CreateMatchForm } from "@/components/admin/create-match-form";
 import { MatchSheetImportForm } from "@/components/admin/match-sheet-import-form";
 import { StatusBadge } from "@/components/status-badge";
+import { DeleteMatchButton } from "@/components/admin/delete-match-button";
 
 const MASTER_LINKS = [
   { href: "/admin/teams", label: "チーム管理" },
@@ -71,10 +72,13 @@ export default async function AdminPage() {
         </h2>
         <ul className="flex flex-col gap-2">
           {(matches ?? []).map((match) => (
-            <li key={match.id}>
+            <li
+              key={match.id}
+              className="flex items-center gap-2 rounded-lg border border-border px-4 py-3 text-sm transition-colors hover:border-accent-cyan"
+            >
               <Link
                 href={`/admin/matches/${match.id}`}
-                className="flex items-center justify-between rounded-lg border border-border px-4 py-3 text-sm transition-colors hover:border-accent-cyan"
+                className="flex flex-1 items-center justify-between"
               >
                 <span className="text-foreground">
                   {match.game_title.toUpperCase()} /{" "}
@@ -82,6 +86,7 @@ export default async function AdminPage() {
                 </span>
                 <StatusBadge status={match.status} />
               </Link>
+              <DeleteMatchButton matchId={match.id} />
             </li>
           ))}
           {(matches ?? []).length === 0 && (

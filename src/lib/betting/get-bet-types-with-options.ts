@@ -3,11 +3,14 @@ import type { Database } from "@/types/database";
 
 export async function getBetTypesWithOptions(
   supabase: SupabaseClient<Database>,
-  filter: { matchId?: string; songId?: string },
+  filter: { matchId?: string; roundId?: string; songId?: string },
 ) {
   let query = supabase.from("bet_types").select("*");
   if (filter.matchId) {
     query = query.eq("match_id", filter.matchId);
+  }
+  if (filter.roundId) {
+    query = query.eq("round_id", filter.roundId);
   }
   if (filter.songId) {
     query = query.eq("song_id", filter.songId);
