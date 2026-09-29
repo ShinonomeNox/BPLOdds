@@ -36,11 +36,13 @@ export async function RoundPanel({
   participants,
   teamAName,
   teamBName,
+  stepLabel,
 }: {
   round: MatchRound;
   participants: ParticipantWithPlayer[];
   teamAName: string;
   teamBName: string;
+  stepLabel?: string;
 }) {
   const supabase = createServiceClient();
   const betTypes = await getBetTypesWithOptions(supabase, { roundId: round.id });
@@ -100,6 +102,7 @@ export async function RoundPanel({
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-medium text-foreground">
+            {stepLabel && <span className="mr-1 text-accent-purple">{stepLabel}</span>}
             {round.round_label}
             <span className="ml-2 rounded-full border border-border px-2 py-0.5 text-xs text-muted">
               {ROUND_FORMAT_LABEL_JA[round.round_format]}

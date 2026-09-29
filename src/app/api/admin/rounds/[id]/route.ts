@@ -2,9 +2,17 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createServiceClient } from "@/lib/supabase/service";
 import { deleteMatchRound } from "@/lib/admin/delete-match-round";
-import type { MatchStatus } from "@/types/database";
+import type { MatchStatus, SongStatus } from "@/types/database";
 
 const ROUND_STATUSES: MatchStatus[] = ["scheduled", "live", "settled"];
+
+// tag_trifecta（DDRタッグ）はラウンド単位のベットを持たず曲単位のみのため、
+// ラウンドの締切操作を各曲のステータスにも連動させる。
+const ROUND_STATUS_TO_SONG_STATUS: Record<MatchStatus, SongStatus> = {
+  scheduled: "open",
+  live: "closed",
+  settled: "settled",
+};
 
 interface UpdateRoundRequestBody {
   status?: unknown;
@@ -49,6 +57,13 @@ export async function PATCH(
   }
   if (!round) {
     return NextResponse.json({ error: "ラウンドが見つかりません" }, { status: 404 });
+  }
+
+  if (round.round_format === "tag_trifecta") {
+    await supabase
+      .from("tag_battle_songs")
+      .update({ status: ROUND_STATUS_TO_SONG_STATUS[status as MatchStatus] })
+      .eq("round_id", id);
   }
 
   return NextResponse.json({ round });

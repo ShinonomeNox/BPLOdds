@@ -61,6 +61,46 @@ export async function settleBetType(
     );
   }
 
+  // 精算確定＝そのベット対象（試合／ラウンド／曲）は終了したとみなし、
+  // statusを自動でsettledにする（管理者が別途ステータス変更する手間を省く）。
+  const { data: betType, error: betTypeError } = await supabase
+    .from("bet_types")
+    .select("match_id, round_id, song_id")
+    .eq("id", betTypeId)
+    .maybeSingle();
+  if (betTypeError) {
+    throw new Error(`ベット種別の取得に失敗しました: ${betTypeError.message}`);
+  }
+  if (betType?.match_id) {
+    await supabase
+      .from("matches")
+      .update({ status: "settled" })
+      .eq("id", betType.match_id);
+  }
+  if (betType?.round_id) {
+    await supabase
+      .from("match_rounds")
+      .update({ status: "settled" })
+      .eq("id", betType.round_id);
+  }
+  if (betType?.song_id) {
+    const { data: song } = await supabase
+      .from("tag_battle_songs")
+      .update({ status: "settled" })
+      .eq("id", betType.song_id)
+      .select("song_number, round_id")
+      .maybeSingle();
+
+    // DDRタッグ（tag_trifecta）はラウンド単位のベットを持たず曲単位のみのため、
+    // 2曲目（Bチーム自選曲）の精算をもってラウンド自体も終了扱いにする。
+    if (song?.song_number === 2 && song.round_id) {
+      await supabase
+        .from("match_rounds")
+        .update({ status: "settled" })
+        .eq("id", song.round_id);
+    }
+  }
+
   const { data: bets, error: betsError } = await supabase
     .from("bets")
     .select("id, user_id, bet_option_id, amount")
