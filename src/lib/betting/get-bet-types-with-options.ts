@@ -27,7 +27,8 @@ export async function getBetTypesWithOptions(
   const { data: betOptions, error: betOptionsError } = await supabase
     .from("bet_options")
     .select("*")
-    .in("bet_type_id", betTypeIds.length > 0 ? betTypeIds : [""]);
+    .in("bet_type_id", betTypeIds.length > 0 ? betTypeIds : [""])
+    .order("sort_order", { ascending: true });
 
   if (betOptionsError) {
     throw new Error(

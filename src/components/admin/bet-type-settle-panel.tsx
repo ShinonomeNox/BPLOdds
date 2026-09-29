@@ -6,7 +6,10 @@ import { useState } from "react";
 interface BetOption {
   id: string;
   label: string;
+  sub_label?: string | null;
   option_key: string;
+  odds?: number | null;
+  poolAmount?: number;
 }
 
 interface BetType {
@@ -66,13 +69,24 @@ export function BetTypeSettlePanel({ betType }: { betType: BetType }) {
       <p className="font-medium text-sm">{betType.label}</p>
       <div className="flex flex-col gap-1 text-sm">
         {betType.options.map((option) => (
-          <label key={option.id} className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={selectedOptionIds.includes(option.id)}
-              onChange={() => toggleOption(option.id)}
-            />
-            {option.label}
+          <label key={option.id} className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={selectedOptionIds.includes(option.id)}
+                onChange={() => toggleOption(option.id)}
+              />
+              {option.label}
+              {option.sub_label && (
+                <span className="text-xs text-muted">（{option.sub_label}）</span>
+              )}
+            </span>
+            {option.odds !== undefined && (
+              <span className="text-xs font-bold text-accent-cyan">
+                {option.odds !== null ? `×${option.odds.toFixed(1)}` : "未賭け"}
+                {option.poolAmount ? ` (${option.poolAmount}EC)` : ""}
+              </span>
+            )}
           </label>
         ))}
       </div>

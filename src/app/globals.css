@@ -1,19 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #05070f;
-  --background-elevated: #0d1226;
-  --surface: #131a33;
-  --surface-hover: #1a2340;
-  --border: #2a3457;
-  --foreground: #e8ecf7;
-  --muted: #8b93b5;
-  --accent-cyan: #22d3ee;
-  --accent-pink: #f637b8;
-  --accent-purple: #a855f7;
-  --success: #34e89e;
-  --danger: #ff4d6d;
-  --warning: #fbbf24;
+  /* 白ベース＋BEMANI PRO LEAGUE -SEASON 6- のオレンジ〜レッドをアクセントに使うパレット */
+  --background: #ffffff;
+  --background-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-hover: #fff1e6;
+  --border: #ecdccb;
+  --foreground: #241608;
+  --muted: #8a7561;
+  --accent-cyan: #ea580c;
+  --accent-pink: #dc2626;
+  --accent-purple: #c2650a;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #d97706;
+  --team-color-fallback: #6b5744;
+  --game-sdvx: #2563eb;
+  --game-iidx: #9333ea;
 }
 
 @theme inline {
@@ -30,6 +34,8 @@
   --color-success: var(--success);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
+  --color-game-sdvx: var(--game-sdvx);
+  --color-game-iidx: var(--game-iidx);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -52,7 +58,7 @@ body {
 
 ::selection {
   background: var(--accent-cyan);
-  color: #05070f;
+  color: #ffffff;
 }
 
 .glow-text {
@@ -62,10 +68,10 @@ body {
 }
 
 .card-surface {
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1rem;
-  backdrop-filter: blur(6px);
+  box-shadow: 0 1px 3px rgba(36, 22, 8, 0.08);
 }
 
 .input-base {
@@ -89,7 +95,7 @@ body {
     var(--accent-cyan),
     var(--accent-purple)
   );
-  color: #05070f;
+  color: #ffffff;
   font-weight: 700;
   border-radius: 0.6rem;
   padding: 0.65rem 1.4rem;

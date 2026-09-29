@@ -1,5 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { getBetTypesWithOptions } from "@/lib/betting/get-bet-types-with-options";
+import { getBetsForOptionIds } from "@/lib/betting/get-bets-for-options";
+import { calculateApproximateOdds } from "@/lib/betting/pari-mutuel";
 import { RoundStatusButtons } from "@/components/admin/round-status-buttons";
 import { BetTypeSettlePanel } from "@/components/admin/bet-type-settle-panel";
 import { SongPanel } from "@/components/admin/song-panel";
@@ -42,6 +44,25 @@ export async function RoundPanel({
 }) {
   const supabase = createServiceClient();
   const betTypes = await getBetTypesWithOptions(supabase, { roundId: round.id });
+
+  const betOptionIds = betTypes.flatMap((bt) => bt.options.map((o) => o.id));
+  const roundBets = await getBetsForOptionIds(supabase, betOptionIds);
+  const betTypesWithOdds = betTypes.map((betType) => {
+    const optionIds = betType.options.map((o) => o.id);
+    const relevantBets = roundBets
+      .filter((b) => optionIds.includes(b.optionId))
+      .map((b) => ({ optionId: b.optionId, amount: b.amount }));
+    const odds = calculateApproximateOdds(relevantBets, optionIds);
+    const oddsByOptionId = new Map(odds.map((o) => [o.optionId, o]));
+    return {
+      ...betType,
+      options: betType.options.map((o) => ({
+        ...o,
+        odds: oddsByOptionId.get(o.id)?.rate ?? null,
+        poolAmount: oddsByOptionId.get(o.id)?.poolAmount ?? 0,
+      })),
+    };
+  });
 
   const roundPlayerIds = [
     round.player_a_id,
@@ -101,7 +122,7 @@ export async function RoundPanel({
 
       <RoundStatusButtons roundId={round.id} currentStatus={round.status} />
 
-      {betTypes.map((betType) => (
+      {betTypesWithOdds.map((betType) => (
         <BetTypeSettlePanel key={betType.id} betType={betType} />
       ))}
 

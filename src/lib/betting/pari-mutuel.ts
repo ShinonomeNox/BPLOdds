@@ -62,11 +62,33 @@ export function calculatePayout(amount: number, rate: number): number {
   return amount * rate;
 }
 
+// 精算確定後の表示用：正解選択肢の確定倍率を算出する。
+// 的中者が一人もいない（全額返金）場合はsettleBetTypeと同じくx1.0として扱う。
+export function calculateConfirmedRates(
+  bets: readonly Bet[],
+  winningOptionIds: readonly string[],
+): Map<string, number> {
+  if (winningOptionIds.length === 0) {
+    return new Map();
+  }
+  try {
+    const rates = calculatePariMutuelRates(bets, winningOptionIds);
+    return new Map(rates.map((rate) => [rate.optionId, rate.rate]));
+  } catch {
+    return new Map(winningOptionIds.map((optionId) => [optionId, 1]));
+  }
+}
+
 export interface ApproximateOddsRate {
   optionId: string;
-  rate: number | null; // null = まだ誰もこのoptionに賭けていない（未賭け）
-  poolAmount: number;
+  rate: number | null; // 表示用の概算オッズ（シード込み、常に計算可能）
+  poolAmount: number; // 実際の賭け金合計（シード抜き、「あなたの賭け」等の表示に使う）
 }
+
+// 表示用の初期流動性シード。実際の精算・エールポイント計算には一切使わない
+// 純粋な表示計算専用の仮想値（DBには保存しない）。全optionが「未賭け」のまま
+// だと寂しいため、各optionに同額を賭けたと仮定してオッズを算出する。
+const DISPLAY_SEED_AMOUNT = 100;
 
 // 現在の賭け状況から、各optionが単独で的中したと仮定した場合の概算オッズを算出する。
 // rate = totalPool / poolOnOption（calculatePariMutuelRatesにwinningOptionIds=[optionId]
@@ -74,23 +96,28 @@ export interface ApproximateOddsRate {
 export function calculateApproximateOdds(
   bets: readonly Bet[],
   optionIds: readonly string[],
+  seedAmount: number = DISPLAY_SEED_AMOUNT,
 ): ApproximateOddsRate[] {
-  const totalPool = bets.reduce((sum, bet) => sum + bet.amount, 0);
-
-  const poolByOptionId = new Map<string, number>();
+  const realPoolByOptionId = new Map<string, number>();
   for (const bet of bets) {
-    poolByOptionId.set(
+    realPoolByOptionId.set(
       bet.optionId,
-      (poolByOptionId.get(bet.optionId) ?? 0) + bet.amount,
+      (realPoolByOptionId.get(bet.optionId) ?? 0) + bet.amount,
     );
   }
 
+  const totalPool = optionIds.reduce(
+    (sum, id) => sum + (realPoolByOptionId.get(id) ?? 0) + seedAmount,
+    0,
+  );
+
   return optionIds.map((optionId) => {
-    const poolAmount = poolByOptionId.get(optionId) ?? 0;
+    const realPoolAmount = realPoolByOptionId.get(optionId) ?? 0;
+    const seededPoolAmount = realPoolAmount + seedAmount;
     return {
       optionId,
-      poolAmount,
-      rate: poolAmount > 0 ? totalPool / poolAmount : null,
+      poolAmount: realPoolAmount,
+      rate: seededPoolAmount > 0 ? totalPool / seededPoolAmount : null,
     };
   });
 }

@@ -8,6 +8,7 @@ import { AmountInput } from "@/components/amount-input";
 export interface TrifectaParticipantViewModel {
   id: string; // match_participants.id
   name: string;
+  teamColor: string | null;
 }
 
 export interface TrifectaOptionViewModel {
@@ -15,6 +16,7 @@ export interface TrifectaOptionViewModel {
   optionKey: string; // "firstId,secondId,thirdId"
   odds: number | null;
   myBetAmount: number | null;
+  isWinner?: boolean;
 }
 
 interface PlaceBetResponse {
@@ -28,6 +30,7 @@ export function TrifectaBetPanel({
   options,
   isLoggedIn,
   isClosed,
+  isSettled = false,
 }: {
   betTypeId: string;
   betTypeLabel: string;
@@ -35,10 +38,15 @@ export function TrifectaBetPanel({
   options: TrifectaOptionViewModel[];
   isLoggedIn: boolean;
   isClosed: boolean;
+  isSettled?: boolean;
 }) {
   const router = useRouter();
   const optionByKey = new Map(options.map((o) => [o.optionKey, o]));
-  const [firstId, setFirstId] = useState<string | null>(participants[0]?.id ?? null);
+  const nameById = new Map(participants.map((p) => [p.id, p.name]));
+  const winner = options.find((o) => o.isWinner);
+  const [firstId, setFirstId] = useState<string | null>(
+    winner ? winner.optionKey.split(",")[0] : (participants[0]?.id ?? null),
+  );
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [amount, setAmount] = useState(10);
   const [isPending, setIsPending] = useState(false);
@@ -79,17 +87,48 @@ export function TrifectaBetPanel({
     <div className="card-surface flex flex-col gap-3 p-4 sm:p-5">
       <p className="font-semibold text-foreground">{betTypeLabel}</p>
 
+      {isSettled && winner && (
+        <p className="rounded-lg border border-success/40 bg-success/10 px-3 py-2 text-sm font-bold text-success">
+          結果:{" "}
+          {winner.optionKey
+            .split(",")
+            .map((id) => nameById.get(id) ?? "?")
+            .join(" → ")}
+          {winner.odds !== null && `（確定×${winner.odds.toFixed(1)}）`}
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-2">
-        {participants.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => handleSelectFirst(p.id)}
-            className={firstId === p.id ? "btn-primary text-xs" : "btn-secondary text-xs"}
-          >
-            {p.name}が1着
-          </button>
-        ))}
+        {participants.map((p) => {
+          const selected = firstId === p.id;
+          if (p.teamColor) {
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => handleSelectFirst(p.id)}
+                className="rounded-lg border-2 px-3 py-1.5 text-xs font-semibold transition-all"
+                style={{
+                  backgroundColor: p.teamColor,
+                  borderColor: selected ? "#ffffff" : p.teamColor,
+                  color: "#ffffff",
+                }}
+              >
+                {p.name}が1着
+              </button>
+            );
+          }
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => handleSelectFirst(p.id)}
+              className={selected ? "btn-primary text-xs" : "btn-secondary text-xs"}
+            >
+              {p.name}が1着
+            </button>
+          );
+        })}
       </div>
 
       {firstId && (
@@ -97,9 +136,13 @@ export function TrifectaBetPanel({
           <table className="w-full text-xs">
             <thead>
               <tr>
-                <th className="p-1 text-left text-muted">2着＼3着</th>
+                <th className="p-0.5 text-left text-muted">2着＼3着</th>
                 {others.map((c) => (
-                  <th key={c.id} className="p-1 text-center text-muted">
+                  <th
+                    key={c.id}
+                    className="p-0.5 text-center font-semibold"
+                    style={c.teamColor ? { color: c.teamColor } : undefined}
+                  >
                     {c.name}
                   </th>
                 ))}
@@ -108,11 +151,16 @@ export function TrifectaBetPanel({
             <tbody>
               {others.map((row) => (
                 <tr key={row.id}>
-                  <td className="p-1 font-semibold text-foreground">{row.name}</td>
+                  <td
+                    className="p-0.5 font-semibold"
+                    style={row.teamColor ? { color: row.teamColor } : undefined}
+                  >
+                    {row.name}
+                  </td>
                   {others.map((col) => {
                     if (col.id === row.id) {
                       return (
-                        <td key={col.id} className="p-1 text-center text-muted">
+                        <td key={col.id} className="p-0.5 text-center text-muted">
                           —
                         </td>
                       );
@@ -120,32 +168,40 @@ export function TrifectaBetPanel({
                     const option = optionByKey.get(`${firstId},${row.id},${col.id}`);
                     if (!option) {
                       return (
-                        <td key={col.id} className="p-1 text-center text-muted">
+                        <td key={col.id} className="p-0.5 text-center text-muted">
                           —
                         </td>
                       );
                     }
                     const selected = selectedOptionId === option.id;
                     return (
-                      <td key={col.id} className="p-1">
+                      <td key={col.id} className="p-0.5">
                         <button
                           type="button"
                           disabled={disabled}
                           onClick={() => setSelectedOptionId(option.id)}
-                          className={`w-full rounded-lg border px-1.5 py-1.5 transition-colors ${
+                          className={`flex w-full flex-col items-center gap-1 rounded-lg border px-1 py-2.5 transition-colors ${
                             selected
                               ? "border-accent-cyan bg-accent-cyan/10"
                               : "border-border hover:border-accent-cyan/50"
-                          } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
+                          } ${disabled ? "cursor-not-allowed opacity-60" : ""} ${
+                            isSettled && option.isWinner ? "ring-2 ring-success" : ""
+                          } ${isSettled && !option.isWinner ? "opacity-50" : ""}`}
                         >
-                          <div className="font-bold text-accent-cyan">
-                            {option.odds !== null ? `×${option.odds.toFixed(1)}` : "未賭け"}
+                          <div className="text-sm font-bold text-accent-cyan">
+                            {isSettled
+                              ? option.isWinner
+                                ? option.odds !== null
+                                  ? `🏆確定×${option.odds.toFixed(1)}`
+                                  : "🏆的中"
+                                : "対象外"
+                              : option.odds !== null
+                                ? `×${option.odds.toFixed(1)}`
+                                : "未賭け"}
                           </div>
-                          {option.myBetAmount !== null && (
-                            <div className="text-[10px] text-accent-purple">
-                              賭済{option.myBetAmount}EC
-                            </div>
-                          )}
+                          <div className="rounded-full bg-black/25 px-1.5 py-0.5 text-[10px] font-semibold text-muted">
+                            あなたのエール: {(option.myBetAmount ?? 0).toLocaleString("ja-JP")}EC
+                          </div>
                         </button>
                       </td>
                     );
@@ -157,7 +213,7 @@ export function TrifectaBetPanel({
         </div>
       )}
 
-      {!isLoggedIn && (
+      {!isLoggedIn && !isClosed && (
         <Link href="/login" className="text-sm text-accent-cyan underline">
           ログインしてエールを送る
         </Link>
@@ -176,7 +232,12 @@ export function TrifectaBetPanel({
           </button>
         </div>
       )}
-      <p className="text-xs text-muted">※最少10ptから</p>
+      {isClosed && !isSettled && (
+        <p className="border-t border-border pt-3 text-sm font-semibold text-muted">
+          締切られました
+        </p>
+      )}
+      {!isClosed && <p className="text-xs text-muted">※最少10ptから</p>}
       {message && <p className="text-xs text-muted">{message}</p>}
     </div>
   );

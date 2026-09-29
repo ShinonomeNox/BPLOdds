@@ -24,9 +24,6 @@ export default async function Home() {
           <Link href="/teams" className="btn-secondary">
             チーム一覧
           </Link>
-          <Link href="/players" className="btn-secondary">
-            選手一覧
-          </Link>
         </div>
       </section>
 

@@ -81,6 +81,7 @@ create table matches (
   status text not null default 'scheduled', -- scheduled / live / settled
   start_time timestamptz not null,
   winner_team_id uuid references teams(id), -- 試合結果登録時に設定（未設定 = 未確定）
+  game_key text, -- 対戦カード表のGame番号（'1'〜'21', 'semi1', 'semi2', 'final'）。表示用
   created_at timestamptz not null default now()
 );
 
@@ -161,11 +162,14 @@ create table bet_options (
   bet_type_id uuid not null references bet_types(id),
   option_key text not null,   -- 'team_a' / '1-2-3'（player_idの並び）等
   label text not null,
+  sub_label text,             -- labelの補足（点差レンジ等、同じlabelが複数選択肢に並ぶ場合の区別用）
   min_diff integer,
   max_diff integer,
   side text,                  -- 'a' / 'b' / null
   player_id uuid references players(id), -- 個人の勝敗に対応する場合のみ設定（エールポイント用、1vs1のみ）
-  team_id uuid references teams(id)      -- sideが対応するチーム（エールポイント用）
+  team_id uuid references teams(id),     -- sideが対応するチーム（エールポイント用）
+  sort_order integer not null default 0, -- 表示順（同一bet_type内での並び順を保証するため）
+  is_winner boolean not null default false -- 精算確定後、正解の選択肢に立つフラグ（結果表示・確定オッズ計算用）
 );
 
 create table bets (

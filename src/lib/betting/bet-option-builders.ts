@@ -1,24 +1,28 @@
 import type { GameTitle, TeamSide } from "@/types/database";
 
-// 各機種の点差ベット閾値（DESIGN.md参照）。
-export const GAME_MARGIN_THRESHOLDS: Record<
-  GameTitle,
-  { closeMax: number; winMax: number }
-> = {
-  iidx: { closeMax: 5, winMax: 12 },
-  sdvx: { closeMax: 3, winMax: 7 },
-  ddr: { closeMax: 4, winMax: 9 },
+// 各機種の点差ベット閾値（4段階×2チーム＋引き分けの9択、均等4分割方式）。
+// 例: IIDX なら 1-3 / 4-6 / 7-9 / 10+ の4段階。
+export const GAME_MARGIN_TIERS: Record<GameTitle, [number, number, number]> = {
+  iidx: [3, 6, 9],
+  sdvx: [2, 4, 6],
+  ddr: [3, 6, 9],
 };
 
 export interface BuildableBetOption {
   optionKey: string;
   label: string;
+  subLabel?: string | null;
   minDiff: number | null;
   maxDiff: number | null;
   side: TeamSide | null;
 }
 
 const SIDE_LABEL: Record<TeamSide, string> = { a: "Aチーム", b: "Bチーム" };
+
+export interface SideNames {
+  a: string;
+  b: string;
+}
 
 export interface TrifectaParticipant {
   id: string;
@@ -51,68 +55,31 @@ export function buildTrifectaBetOptions(
   return options;
 }
 
-export interface MarginThreshold {
-  closeMax: number;
-  winMax: number;
-}
-
-// 点差（スコア差）3段階 × 2チーム = 6択の共通ロジック
+// 点差（スコア差）4段階 × 2チーム + 引き分け = 9択の共通ロジック。
+// 各選択肢のlabelは「(チーム名) WIN」で統一し、点差レンジはsubLabelに分離する
+// （同じチームのWIN選択肢が複数並ぶため、labelだけでは区別できない）。
 export function buildMarginBetOptionsFromThreshold(
-  threshold: MarginThreshold,
+  tiers: readonly [number, number, number],
+  teamNames: SideNames,
   unitLabel = "点差",
 ): BuildableBetOption[] {
-  const { closeMax, winMax } = threshold;
+  const [t1, t2, t3] = tiers;
   const sides: TeamSide[] = ["a", "b"];
 
-  return sides.flatMap((side) => [
-    {
-      optionKey: `${side}_close`,
-      label: `${SIDE_LABEL[side]}僅差勝利（1〜${closeMax}${unitLabel}）`,
-      minDiff: 1,
-      maxDiff: closeMax,
-      side,
-    },
-    {
-      optionKey: `${side}_win`,
-      label: `${SIDE_LABEL[side]}勝利（${closeMax + 1}〜${winMax}${unitLabel}）`,
-      minDiff: closeMax + 1,
-      maxDiff: winMax,
-      side,
-    },
-    {
-      optionKey: `${side}_big`,
-      label: `${SIDE_LABEL[side]}大差勝利（${winMax + 1}${unitLabel}以上）`,
-      minDiff: winMax + 1,
-      maxDiff: null,
-      side,
-    },
-  ]);
-}
-
-// チーム間の点差ベット（3段階 × 2チーム = 6択）
-export function buildMarginBetOptions(
-  gameTitle: GameTitle,
-): BuildableBetOption[] {
-  return buildMarginBetOptionsFromThreshold(GAME_MARGIN_THRESHOLDS[gameTitle]);
-}
-
-// メガミックスバトルの生スコア差ベット（MatchCategory.md準拠）。
-// 4段階（3点差未満/4-6/7-9/10以上）×2チーム＋引き分けの9択。
-export function buildMegamixRawScoreDiffBetOptions(): BuildableBetOption[] {
-  const sides: TeamSide[] = ["a", "b"];
-  const tiers: { suffix: string; label: string; min: number; max: number | null }[] = [
-    { suffix: "close", label: "3点差未満勝利", min: 1, max: 3 },
-    { suffix: "mid", label: "4-6点差勝利", min: 4, max: 6 },
-    { suffix: "high", label: "7-9点差勝利", min: 7, max: 9 },
-    { suffix: "big", label: "10点差以上勝利", min: 10, max: null },
+  const bands: { suffix: string; subLabel: string; min: number; max: number | null }[] = [
+    { suffix: "close", subLabel: `僅差勝利予想（1〜${t1}${unitLabel}）`, min: 1, max: t1 },
+    { suffix: "mid", subLabel: `勝利予想（${t1 + 1}〜${t2}${unitLabel}）`, min: t1 + 1, max: t2 },
+    { suffix: "high", subLabel: `勝利予想（${t2 + 1}〜${t3}${unitLabel}）`, min: t2 + 1, max: t3 },
+    { suffix: "big", subLabel: `大差勝利予想（${t3 + 1}${unitLabel}以上）`, min: t3 + 1, max: null },
   ];
 
   const sidedOptions = sides.flatMap((side) =>
-    tiers.map((tier) => ({
-      optionKey: `${side}_${tier.suffix}`,
-      label: `${SIDE_LABEL[side]}${tier.label}`,
-      minDiff: tier.min,
-      maxDiff: tier.max,
+    bands.map((band) => ({
+      optionKey: `${side}_${band.suffix}`,
+      label: `${teamNames[side]} WIN`,
+      subLabel: band.subLabel,
+      minDiff: band.min,
+      maxDiff: band.max,
       side,
     })),
   );
@@ -122,6 +89,7 @@ export function buildMegamixRawScoreDiffBetOptions(): BuildableBetOption[] {
     {
       optionKey: "draw",
       label: "引き分け",
+      subLabel: null,
       minDiff: 0,
       maxDiff: 0,
       side: null,
@@ -129,12 +97,22 @@ export function buildMegamixRawScoreDiffBetOptions(): BuildableBetOption[] {
   ];
 }
 
+// チーム間の点差ベット（4段階 × 2チーム + 引き分け = 9択）
+export function buildMarginBetOptions(
+  gameTitle: GameTitle,
+  teamNames: SideNames,
+): BuildableBetOption[] {
+  return buildMarginBetOptionsFromThreshold(GAME_MARGIN_TIERS[gameTitle], teamNames);
+}
+
 // シングルバトル初見のみ（IIDX、1曲のみ）の勝敗3択。
-export function buildSingleFirstLookResultBetOptions(): BuildableBetOption[] {
+export function buildSingleFirstLookResultBetOptions(
+  sideNames: SideNames,
+): BuildableBetOption[] {
   return [
     {
       optionKey: "a_win",
-      label: "Aチーム勝ち",
+      label: `${sideNames.a} WIN`,
       minDiff: null,
       maxDiff: null,
       side: "a",
@@ -148,7 +126,7 @@ export function buildSingleFirstLookResultBetOptions(): BuildableBetOption[] {
     },
     {
       optionKey: "b_win",
-      label: "Bチーム勝ち",
+      label: `${sideNames.b} WIN`,
       minDiff: null,
       maxDiff: null,
       side: "b",
@@ -200,20 +178,23 @@ export function buildDdrPairRankDiffBetOptions(): BuildableBetOption[] {
 // SDVXシングルバトル（3曲勝負）の結果パターン（仮実装、10択）。
 // DESIGN.mdでは「未確定・実運用で調整予定」とされているため、他の結果パターンと
 // 同じ考え方（勝ち-分け-負けの組み合わせをside付きで列挙）で暫定的に定義する。
-export function buildSdvxSingleBattleResultBetOptions(): BuildableBetOption[] {
+// 各sideの並びは勝ち数の多い順→引き分け数の多い順。
+export function buildSdvxSingleBattleResultBetOptions(
+  sideNames: SideNames,
+): BuildableBetOption[] {
   const sides: TeamSide[] = ["a", "b"];
 
   const sidedPatterns: { suffix: string; label: string }[] = [
-    { suffix: "sweep", label: "3タテ（3-0）" },
-    { suffix: "win_one_draw", label: "2勝1分け（2-0-1分）" },
-    { suffix: "win_one_loss", label: "2勝1敗（2-1）" },
-    { suffix: "win_two_draw", label: "1勝2分け（1-0-2分）" },
+    { suffix: "sweep", label: "3タテ" },
+    { suffix: "win_one_draw", label: "2勝1分け" },
+    { suffix: "win_one_loss", label: "2勝1敗" },
+    { suffix: "win_two_draw", label: "1勝2分け" },
   ];
 
   const sidedOptions = sides.flatMap((side) =>
     sidedPatterns.map(({ suffix, label }) => ({
       optionKey: `${side}_${suffix}`,
-      label: `${SIDE_LABEL[side]}${label}`,
+      label: `${sideNames[side]} ${label}`,
       minDiff: null,
       maxDiff: null,
       side,
@@ -239,33 +220,70 @@ export function buildSdvxSingleBattleResultBetOptions(): BuildableBetOption[] {
   ];
 }
 
-// マッチ単位の結果パターン（IIDX2曲勝負／DDRシングル／SDVXタッグ共通の6択）
-export function buildMatchResultBetOptions(): BuildableBetOption[] {
+// メガミックスバトルの生スコア差ベット（MatchCategory.md準拠）。
+// 4段階（3点差未満/4-6/7-9/10以上）×2チーム＋引き分けの9択。
+// 点差が小さいものから順に並ぶよう配列順を保つ（sort_orderで永続化）。
+export function buildMegamixRawScoreDiffBetOptions(): BuildableBetOption[] {
+  const sides: TeamSide[] = ["a", "b"];
+  const tiers: { suffix: string; label: string; min: number; max: number | null }[] = [
+    { suffix: "close", label: "3点差未満勝利", min: 1, max: 3 },
+    { suffix: "mid", label: "4-6点差勝利", min: 4, max: 6 },
+    { suffix: "high", label: "7-9点差勝利", min: 7, max: 9 },
+    { suffix: "big", label: "10点差以上勝利", min: 10, max: null },
+  ];
+
+  const sidedOptions = sides.flatMap((side) =>
+    tiers.map((tier) => ({
+      optionKey: `${side}_${tier.suffix}`,
+      label: `${SIDE_LABEL[side]}${tier.label}`,
+      minDiff: tier.min,
+      maxDiff: tier.max,
+      side,
+    })),
+  );
+
+  return [
+    ...sidedOptions,
+    {
+      optionKey: "draw",
+      label: "引き分け",
+      minDiff: 0,
+      maxDiff: 0,
+      side: null,
+    },
+  ];
+}
+
+// マッチ単位の結果パターン（IIDX2曲勝負／DDRシングル／SDVXタッグ共通の6択）。
+// シングル形式は選手名1人分、タッグ形式（SDVX）は2人分（"選手A/選手A2"）を表示する。
+export function buildMatchResultBetOptions(
+  sideNames: SideNames,
+): BuildableBetOption[] {
   return [
     {
       optionKey: "a_sweep",
-      label: "Aチーム2タテ",
+      label: `${sideNames.a} 2タテ`,
       minDiff: null,
       maxDiff: null,
       side: "a",
     },
     {
       optionKey: "b_sweep",
-      label: "Bチーム2タテ",
+      label: `${sideNames.b} 2タテ`,
       minDiff: null,
       maxDiff: null,
       side: "b",
     },
     {
       optionKey: "a_win_draw",
-      label: "Aチーム1勝1分け",
+      label: `${sideNames.a} 1勝1分け`,
       minDiff: null,
       maxDiff: null,
       side: "a",
     },
     {
       optionKey: "b_win_draw",
-      label: "Bチーム1勝1分け",
+      label: `${sideNames.b} 1勝1分け`,
       minDiff: null,
       maxDiff: null,
       side: "b",

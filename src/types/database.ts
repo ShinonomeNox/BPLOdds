@@ -177,6 +177,7 @@ export interface Database {
           status: MatchStatus;
           start_time: string;
           winner_team_id: string | null;
+          game_key: string | null;
           created_at: string;
         };
         Insert: {
@@ -187,6 +188,7 @@ export interface Database {
           status?: MatchStatus;
           start_time: string;
           winner_team_id?: string | null;
+          game_key?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["matches"]["Insert"]>;
@@ -320,22 +322,28 @@ export interface Database {
           bet_type_id: string;
           option_key: string;
           label: string;
+          sub_label: string | null;
           min_diff: number | null;
           max_diff: number | null;
           side: TeamSide | null;
           player_id: string | null;
           team_id: string | null;
+          sort_order: number;
+          is_winner: boolean;
         };
         Insert: {
           id?: string;
           bet_type_id: string;
           option_key: string;
           label: string;
+          sub_label?: string | null;
           min_diff?: number | null;
           max_diff?: number | null;
           side?: TeamSide | null;
           player_id?: string | null;
           team_id?: string | null;
+          sort_order?: number;
+          is_winner?: boolean;
         };
         Update: Partial<
           Database["public"]["Tables"]["bet_options"]["Insert"]

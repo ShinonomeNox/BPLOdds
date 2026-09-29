@@ -6,6 +6,7 @@ import {
   buildSdvxSingleBattleResultBetOptions,
   buildSingleFirstLookResultBetOptions,
   type BuildableBetOption,
+  type SideNames,
 } from "@/lib/betting/bet-option-builders";
 
 export const ROUND_FORMAT_LABEL_JA: Record<RoundFormat, string> = {
@@ -27,14 +28,30 @@ export interface MatchBetTypeDef {
 // 「試合の勝敗（2択）」は行わず、点差レンジでの勝敗予想に一本化する。
 export function buildMatchLevelBetTypeDefs(
   gameTitle: GameTitle,
+  teamNames: SideNames,
 ): MatchBetTypeDef[] {
   return [
     {
       typeKey: "team_margin",
       label: "点差予想",
-      options: buildMarginBetOptions(gameTitle),
+      options: buildMarginBetOptions(gameTitle, teamNames),
     },
   ];
+}
+
+export interface RoundPlayerNames {
+  aName: string;
+  bName: string;
+  a2Name?: string | null;
+  b2Name?: string | null;
+}
+
+// タッグ形式（SDVXタッグ）は "選手A/選手A2" のように2人分を1つの表示名にまとめる。
+function toSideNames(players: RoundPlayerNames): SideNames {
+  return {
+    a: players.a2Name ? `${players.aName}/${players.a2Name}` : players.aName,
+    b: players.b2Name ? `${players.bName}/${players.b2Name}` : players.bName,
+  };
 }
 
 // マッチ（ラウンド、1st/2nd/3rd...）単位のベット（MatchCategory.md準拠）。
@@ -43,26 +60,28 @@ export function buildMatchLevelBetTypeDefs(
 export function buildRoundLevelBetTypeDef(
   format: RoundFormat,
   roundLabel: string,
+  players: RoundPlayerNames,
 ): MatchBetTypeDef | null {
+  const sideNames = toSideNames(players);
   switch (format) {
     case "single":
     case "tag_score":
       return {
         typeKey: "match_result",
         label: `${roundLabel}予想`,
-        options: buildMatchResultBetOptions(),
+        options: buildMatchResultBetOptions(sideNames),
       };
     case "single_first_look":
       return {
         typeKey: "single_first_look_result",
         label: `${roundLabel}予想`,
-        options: buildSingleFirstLookResultBetOptions(),
+        options: buildSingleFirstLookResultBetOptions(sideNames),
       };
     case "single_with_first_look":
       return {
         typeKey: "sdvx_single_result",
         label: `${roundLabel}予想`,
-        options: buildSdvxSingleBattleResultBetOptions(),
+        options: buildSdvxSingleBattleResultBetOptions(sideNames),
       };
     case "megamix":
       return {

@@ -70,7 +70,7 @@ export default async function TeamsPage() {
                 href={`/teams/${representativeTeam.id}`}
                 className="group flex items-center justify-between px-5 py-3 transition-[filter] hover:brightness-110"
                 style={{
-                  backgroundColor: color ?? "var(--surface-hover)",
+                  backgroundColor: color ?? "var(--team-color-fallback)",
                 }}
               >
                 <h2 className="text-lg font-extrabold text-white drop-shadow-sm">

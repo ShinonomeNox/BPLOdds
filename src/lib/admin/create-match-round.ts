@@ -134,7 +134,12 @@ export async function createMatchRound(
     );
   }
 
-  const betTypeDef = buildRoundLevelBetTypeDef(roundFormat, roundLabel);
+  const betTypeDef = buildRoundLevelBetTypeDef(roundFormat, roundLabel, {
+    aName: playerAName,
+    bName: playerBName,
+    a2Name: playerA2Name,
+    b2Name: playerB2Name,
+  });
   if (betTypeDef) {
     const { data: betType, error: betTypeError } = await supabase
       .from("bet_types")
@@ -153,14 +158,16 @@ export async function createMatchRound(
     }
 
     const { error: optionsError } = await supabase.from("bet_options").insert(
-      betTypeDef.options.map((option) => ({
+      betTypeDef.options.map((option, index) => ({
         bet_type_id: betType.id,
         option_key: option.optionKey,
         label: option.label,
+        sub_label: option.subLabel ?? null,
         min_diff: option.minDiff,
         max_diff: option.maxDiff,
         side: option.side,
         team_id: resolveTeamIdBySide(option.side, teamAId, teamBId),
+        sort_order: index,
       })),
     );
 
@@ -220,13 +227,14 @@ export async function createMatchRound(
       const { error: trifectaOptionsError } = await supabase
         .from("bet_options")
         .insert(
-          trifectaOptions.map((option) => ({
+          trifectaOptions.map((option, index) => ({
             bet_type_id: songBetType.id,
             option_key: option.optionKey,
             label: option.label,
             min_diff: option.minDiff,
             max_diff: option.maxDiff,
             side: option.side,
+            sort_order: index,
           })),
         );
 

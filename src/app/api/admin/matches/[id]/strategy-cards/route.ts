@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createServiceClient } from "@/lib/supabase/service";
-import { STRATEGY_CARD_ROUND_LABELS } from "@/lib/betting/strategy-cards";
+import {
+  STRATEGY_CARD_LIMIT_PER_TEAM,
+  STRATEGY_CARD_ROUND_LABELS,
+} from "@/lib/betting/strategy-cards";
 
 interface CreateStrategyCardUsageRequestBody {
   teamId?: unknown;
@@ -69,6 +72,31 @@ export async function POST(
         error: `roundLabelは${STRATEGY_CARD_ROUND_LABELS[team.game_title].join("/")}のいずれかで指定してください`,
       },
       { status: 400 },
+    );
+  }
+
+  // 1試合につき同じチームは1回まで
+  const { count: usedInThisMatch } = await supabase
+    .from("strategy_card_usages")
+    .select("id", { count: "exact", head: true })
+    .eq("match_id", matchId)
+    .eq("team_id", teamId);
+  if ((usedInThisMatch ?? 0) > 0) {
+    return NextResponse.json(
+      { error: "このチームは既にこの試合でストラテジーカードを使用済みです" },
+      { status: 409 },
+    );
+  }
+
+  // 機種ごとの保有枚数（2枚）を超えていないか
+  const { count: usedTotal } = await supabase
+    .from("strategy_card_usages")
+    .select("id", { count: "exact", head: true })
+    .eq("team_id", teamId);
+  if ((usedTotal ?? 0) >= STRATEGY_CARD_LIMIT_PER_TEAM) {
+    return NextResponse.json(
+      { error: "このチームのストラテジーカードは既に使い切っています" },
+      { status: 409 },
     );
   }
 

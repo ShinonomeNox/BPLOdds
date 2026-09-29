@@ -61,7 +61,7 @@ export default async function PlayerPage({
       <div className="card-surface mb-6 overflow-hidden text-center">
         <div
           className="px-6 py-8 sm:px-8 sm:py-10"
-          style={{ backgroundColor: team?.color ?? "var(--surface-hover)" }}
+          style={{ backgroundColor: team?.color ?? "var(--team-color-fallback)" }}
         >
           <h1 className="text-2xl font-extrabold text-white drop-shadow-sm sm:text-3xl">
             {player.name}

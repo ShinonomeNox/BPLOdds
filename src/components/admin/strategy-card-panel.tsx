@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { STRATEGY_CARD_ROUND_LABELS } from "@/lib/betting/strategy-cards";
 import type { GameTitle } from "@/types/database";
 
@@ -42,15 +42,14 @@ export function StrategyCardPanel({
 }) {
   const router = useRouter();
   const roundLabels = STRATEGY_CARD_ROUND_LABELS[gameTitle];
-  const [teamId, setTeamId] = useState(teams[0]?.id ?? "");
-  const [roundLabel, setRoundLabel] = useState(roundLabels[0] ?? "");
   const [targetSongId, setTargetSongId] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const usedTeamIdsInThisMatch = new Set(usages.map((u) => u.teamId));
+
+  async function handleRecord(teamId: string, roundLabel: string) {
     setError(null);
     setIsPending(true);
     try {
@@ -70,6 +69,7 @@ export function StrategyCardPanel({
         return;
       }
       setNote("");
+      setTargetSongId("");
       router.refresh();
     } finally {
       setIsPending(false);
@@ -96,51 +96,43 @@ export function StrategyCardPanel({
         ストラテジーカード
       </h2>
 
-      <div className="mb-4 flex flex-wrap gap-3 text-sm">
-        {teams.map((team) => (
-          <span
-            key={team.id}
-            className="rounded-lg border border-border px-3 py-1.5 text-foreground"
-          >
-            [{team.side.toUpperCase()}] {team.name}：残り
-            {Math.max(team.limit - team.usedCount, 0)}/{team.limit}枚
-          </span>
-        ))}
+      <div className="mb-4 flex flex-col gap-3">
+        {teams.map((team) => {
+          const remaining = Math.max(team.limit - team.usedCount, 0);
+          const alreadyUsedThisMatch = usedTeamIdsInThisMatch.has(team.id);
+          const disabled = isPending || remaining <= 0 || alreadyUsedThisMatch;
+          return (
+            <div key={team.id} className="rounded-lg border border-border p-3">
+              <p className="mb-2 text-sm font-semibold text-foreground">
+                [{team.side.toUpperCase()}] {team.name}：残り{remaining}/{team.limit}枚
+                {alreadyUsedThisMatch && (
+                  <span className="ml-2 text-xs font-normal text-muted">
+                    （この試合では使用済み）
+                  </span>
+                )}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {roundLabels.map((label) => (
+                  <button
+                    key={label}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => handleRecord(team.id, label)}
+                    className="btn-secondary px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {label}で使用
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="mb-4 flex flex-col gap-2 rounded-lg border border-border p-3"
-      >
-        <p className="text-sm font-medium text-foreground">使用を記録</p>
-        <label className="flex items-center gap-2 text-sm">
-          使用チーム
-          <select
-            value={teamId}
-            onChange={(e) => setTeamId(e.target.value)}
-            className="input-base py-1"
-          >
-            {teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                [{team.side.toUpperCase()}] {team.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          ラウンド
-          <select
-            value={roundLabel}
-            onChange={(e) => setRoundLabel(e.target.value)}
-            className="input-base py-1"
-          >
-            {roundLabels.map((label) => (
-              <option key={label} value={label}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="mb-4 flex flex-col gap-2 rounded-lg border border-border p-3">
+        <p className="text-xs text-muted">
+          上のボタンを押すと即座に使用記録が登録されます。曲・メモを添えたい場合は先に入力してからボタンを押してください。
+        </p>
         {songs.length > 0 && (
           <label className="flex items-center gap-2 text-sm">
             無効化した曲（任意）
@@ -167,15 +159,8 @@ export function StrategyCardPanel({
             className="input-base py-1"
           />
         </label>
-        {error && <p className="text-sm text-danger">{error}</p>}
-        <button
-          type="submit"
-          disabled={isPending || !teamId || !roundLabel}
-          className="self-start btn-secondary text-sm"
-        >
-          使用を記録
-        </button>
-      </form>
+      </div>
+      {error && <p className="mb-2 text-sm text-danger">{error}</p>}
 
       <ul className="flex flex-col gap-1 text-sm">
         {usages.map((usage) => (

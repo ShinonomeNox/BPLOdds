@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { MatchSheetImportForm } from "@/components/admin/match-sheet-import-form";
 import { StatusBadge } from "@/components/status-badge";
 import { DeleteMatchButton } from "@/components/admin/delete-match-button";
+import { formatGameLabel } from "@/lib/betting/format-game-label";
 
 const MASTER_LINKS = [
   { href: "/admin/teams", label: "チーム管理" },
@@ -27,7 +28,7 @@ export default async function AdminPage() {
   const supabase = createServiceClient();
   const { data: matches } = await supabase
     .from("matches")
-    .select("id, game_title, status, start_time")
+    .select("id, game_title, status, start_time, game_key")
     .order("start_time", { ascending: false });
 
   return (
@@ -71,7 +72,10 @@ export default async function AdminPage() {
                 className="flex flex-1 items-center justify-between"
               >
                 <span className="text-foreground">
-                  {match.game_title.toUpperCase()} /{" "}
+                  {match.game_title.toUpperCase()}
+                  {formatGameLabel(match.game_key) &&
+                    ` / ${formatGameLabel(match.game_key)}`}{" "}
+                  /{" "}
                   {new Date(match.start_time).toLocaleString("ja-JP")}
                 </span>
                 <StatusBadge status={match.status} />

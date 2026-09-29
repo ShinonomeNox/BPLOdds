@@ -107,6 +107,7 @@ export async function POST(request: Request) {
           team_a_id: teamAId,
           team_b_id: teamBId,
           start_time: startTime,
+          game_key: parsed.gameKey,
         })
         .select("id")
         .single();
@@ -118,7 +119,10 @@ export async function POST(request: Request) {
         continue;
       }
 
-      const betTypeDefs = buildMatchLevelBetTypeDefs(block.gameTitle);
+      const betTypeDefs = buildMatchLevelBetTypeDefs(block.gameTitle, {
+        a: parsed.teamAName,
+        b: parsed.teamBName,
+      });
       for (const def of betTypeDefs) {
         const { data: betType, error: betTypeError } = await supabase
           .from("bet_types")
@@ -138,14 +142,16 @@ export async function POST(request: Request) {
         const { error: optionsError } = await supabase
           .from("bet_options")
           .insert(
-            def.options.map((option) => ({
+            def.options.map((option, index) => ({
               bet_type_id: betType.id,
               option_key: option.optionKey,
               label: option.label,
+              sub_label: option.subLabel ?? null,
               min_diff: option.minDiff,
               max_diff: option.maxDiff,
               side: option.side,
               team_id: resolveTeamIdBySide(option.side, teamAId, teamBId),
+              sort_order: index,
             })),
           );
 

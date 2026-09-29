@@ -60,16 +60,28 @@ export function MatchSheetImportForm() {
         onChange={(e) => setText(e.target.value)}
         placeholder={PLACEHOLDER}
         rows={10}
-        className="input-base w-full font-mono text-xs"
+        disabled={isPending}
+        className="input-base w-full font-mono text-xs disabled:opacity-60"
       />
       <button
         type="button"
         onClick={handleSubmit}
         disabled={isPending || text.trim().length === 0}
-        className="btn-primary self-start text-sm"
+        className="btn-primary flex items-center gap-2 self-start text-sm"
       >
-        対戦カードを一括インポート
+        {isPending && (
+          <span
+            aria-hidden
+            className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+          />
+        )}
+        {isPending ? "インポート中…" : "対戦カードを一括インポート"}
       </button>
+      {isPending && (
+        <p className="text-xs text-muted">
+          処理中です。ページ遷移せずそのままお待ちください。
+        </p>
+      )}
       {result?.error && <p className="text-sm text-danger">{result.error}</p>}
       {result && !result.error && (
         <div className="text-sm">

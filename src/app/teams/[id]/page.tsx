@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { DonateTeamForm } from "@/components/donate-team-form";
-import { STRATEGY_CARD_LIMIT_PER_TEAM } from "@/lib/betting/strategy-cards";
+import {
+  STRATEGY_CARD_LIMIT_PER_TEAM,
+  STRATEGY_CARD_ROUND_LABELS,
+} from "@/lib/betting/strategy-cards";
 import { StatusBadge } from "@/components/status-badge";
 import { BackButton } from "@/components/back-button";
 import { Tabs, type TabItem } from "@/components/tabs";
@@ -203,10 +206,28 @@ export default async function TeamPage({
               <h3 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
                 ストラテジーカード
               </h3>
-              <p className="mb-3 text-sm text-foreground">
+              <p className="mb-2 text-sm text-foreground">
                 残り {Math.max(STRATEGY_CARD_LIMIT_PER_TEAM - section.cardUsages.length, 0)}/
                 {STRATEGY_CARD_LIMIT_PER_TEAM}枚
               </p>
+              <div className="mb-3 flex flex-wrap gap-2">
+                {STRATEGY_CARD_ROUND_LABELS[section.team.game_title].map((label) => {
+                  const used = section.cardUsages.some((u) => u.round_label === label);
+                  return (
+                    <span
+                      key={label}
+                      className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${
+                        used
+                          ? "border-border text-muted line-through"
+                          : "border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan"
+                      }`}
+                    >
+                      {label}
+                      {used ? "：使用済み" : "：未使用"}
+                    </span>
+                  );
+                })}
+              </div>
               <ul className="flex flex-col gap-1 text-sm text-muted">
                 {section.cardUsages.map((usage) => {
                   const match = section.cardUsageMatchById.get(usage.match_id);
@@ -268,7 +289,7 @@ export default async function TeamPage({
         <div
           className="px-6 py-8 sm:px-8 sm:py-10"
           style={{
-            backgroundColor: team.color ?? "var(--surface-hover)",
+            backgroundColor: team.color ?? "var(--team-color-fallback)",
           }}
         >
           <h1 className="text-2xl font-extrabold text-white drop-shadow-sm sm:text-3xl">

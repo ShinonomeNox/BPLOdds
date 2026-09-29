@@ -41,6 +41,26 @@ export async function settleBetType(
   const teamIdByOptionId = new Map(
     options.map((option) => [option.id, option.team_id]),
   );
+
+  const { error: winnerFlagError } = await supabase
+    .from("bet_options")
+    .update({ is_winner: false })
+    .eq("bet_type_id", betTypeId);
+  if (winnerFlagError) {
+    throw new Error(
+      `選択肢の初期化に失敗しました: ${winnerFlagError.message}`,
+    );
+  }
+  const { error: winnerFlagSetError } = await supabase
+    .from("bet_options")
+    .update({ is_winner: true })
+    .in("id", winningOptionIds);
+  if (winnerFlagSetError) {
+    throw new Error(
+      `正解フラグの設定に失敗しました: ${winnerFlagSetError.message}`,
+    );
+  }
+
   const { data: bets, error: betsError } = await supabase
     .from("bets")
     .select("id, user_id, bet_option_id, amount")

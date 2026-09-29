@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getBetTypesWithOptions } from "@/lib/betting/get-bet-types-with-options";
+import { getBetsForOptionIds } from "@/lib/betting/get-bets-for-options";
+import { calculateApproximateOdds } from "@/lib/betting/pari-mutuel";
 import { MatchStatusButtons } from "@/components/admin/match-status-buttons";
 import { AddRoundForm } from "@/components/admin/add-round-form";
 import { RoundPanel } from "@/components/admin/round-panel";
@@ -9,10 +11,11 @@ import { BetTypeSettlePanel } from "@/components/admin/bet-type-settle-panel";
 import { StatusBadge } from "@/components/status-badge";
 import { StrategyCardPanel } from "@/components/admin/strategy-card-panel";
 import { STRATEGY_CARD_LIMIT_PER_TEAM } from "@/lib/betting/strategy-cards";
-import { EditMatchForm } from "@/components/admin/edit-match-form";
+import { EditMatchToggle } from "@/components/admin/edit-match-toggle";
 import { DeleteMatchButton } from "@/components/admin/delete-match-button";
 import { MatchTeamHeader } from "@/components/match-team-header";
 import { Tabs, type TabItem } from "@/components/tabs";
+import { formatGameLabel } from "@/lib/betting/format-game-label";
 
 export default async function AdminMatchPage({
   params,
@@ -107,6 +110,26 @@ export default async function AdminMatchPage({
     matchId,
   });
 
+  // 試合単位のベットにオッズを付加（bet_type単位で独立して算出）
+  const matchBetOptionIds = matchBetTypes.flatMap((bt) => bt.options.map((o) => o.id));
+  const matchBets = await getBetsForOptionIds(supabase, matchBetOptionIds);
+  const matchBetTypesWithOdds = matchBetTypes.map((betType) => {
+    const optionIds = betType.options.map((o) => o.id);
+    const relevantBets = matchBets
+      .filter((b) => optionIds.includes(b.optionId))
+      .map((b) => ({ optionId: b.optionId, amount: b.amount }));
+    const odds = calculateApproximateOdds(relevantBets, optionIds);
+    const oddsByOptionId = new Map(odds.map((o) => [o.optionId, o]));
+    return {
+      ...betType,
+      options: betType.options.map((o) => ({
+        ...o,
+        odds: oddsByOptionId.get(o.id)?.rate ?? null,
+        poolAmount: oddsByOptionId.get(o.id)?.poolAmount ?? 0,
+      })),
+    };
+  });
+
   const playerNameById = new Map((players ?? []).map((p) => [p.id, p.name]));
   const participantList = (participants ?? []).map((p) => ({
     ...p,
@@ -128,25 +151,12 @@ export default async function AdminMatchPage({
   const teamAName = teamNameById.get(match.team_a_id) ?? "?";
   const teamBName = teamNameById.get(match.team_b_id) ?? "?";
 
-  const tabs: TabItem[] = [
+  const infoTabs: TabItem[] = [
     {
-      key: "overview",
-      label: "試合全体",
+      key: "status",
+      label: "試合状況",
       content: (
         <div className="flex flex-col gap-6">
-          <section className="card-surface p-5 sm:p-6">
-            <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
-              試合編集
-            </h2>
-            <EditMatchForm
-              matchId={match.id}
-              teams={allTeams ?? []}
-              initialTeamAId={match.team_a_id}
-              initialTeamBId={match.team_b_id}
-              initialStartTime={match.start_time}
-            />
-          </section>
-
           <section className="card-surface p-5 sm:p-6">
             <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
               試合ステータス
@@ -162,65 +172,14 @@ export default async function AdminMatchPage({
             />
           </section>
 
-          <section className="card-surface p-5 sm:p-6">
-            <h2 className="mb-3 text-sm font-bold tracking-wide text-accent-purple">
-              出場選手
-            </h2>
-            <ul className="flex flex-col gap-1 text-sm">
-              {participantList.map((p) => (
-                <li key={p.id} className="text-foreground">
-                  [{p.team_side.toUpperCase()}] {p.playerName}
-                </li>
-              ))}
-              {participantList.length === 0 && (
-                <p className="text-muted">出場選手は未登録です</p>
-              )}
-            </ul>
-          </section>
-
-          <StrategyCardPanel
-            matchId={match.id}
-            gameTitle={match.game_title}
-            teams={[
-              {
-                id: match.team_a_id,
-                name: teamAName,
-                side: "a",
-                usedCount: teamAUsedCount ?? 0,
-                limit: STRATEGY_CARD_LIMIT_PER_TEAM,
-              },
-              {
-                id: match.team_b_id,
-                name: teamBName,
-                side: "b",
-                usedCount: teamBUsedCount ?? 0,
-                limit: STRATEGY_CARD_LIMIT_PER_TEAM,
-              },
-            ]}
-            songs={(songs ?? []).map((s) => ({
-              id: s.id,
-              label: songLabelById.get(s.id) ?? `曲${s.song_number}`,
-            }))}
-            usages={(matchUsages ?? []).map((u) => ({
-              id: u.id,
-              teamId: u.team_id,
-              teamName: teamNameById.get(u.team_id) ?? "?",
-              roundLabel: u.round_label,
-              targetSongLabel: u.target_song_id
-                ? (songLabelById.get(u.target_song_id) ?? null)
-                : null,
-              note: u.note,
-            }))}
-          />
-
           <section className="flex flex-col gap-3">
             <h2 className="text-sm font-bold tracking-wide text-accent-purple">
               試合単位のベット
             </h2>
-            {matchBetTypes.map((betType) => (
+            {matchBetTypesWithOdds.map((betType) => (
               <BetTypeSettlePanel key={betType.id} betType={betType} />
             ))}
-            {matchBetTypes.length === 0 && (
+            {matchBetTypesWithOdds.length === 0 && (
               <p className="text-sm text-muted">
                 この対戦形式では試合単位のベットはありません（曲単位のベットのみ）
               </p>
@@ -228,6 +187,54 @@ export default async function AdminMatchPage({
           </section>
         </div>
       ),
+    },
+    {
+      key: "strategy-cards",
+      label: "ストラテジーカード",
+      content: (
+        <StrategyCardPanel
+          matchId={match.id}
+          gameTitle={match.game_title}
+          teams={[
+            {
+              id: match.team_a_id,
+              name: teamAName,
+              side: "a",
+              usedCount: teamAUsedCount ?? 0,
+              limit: STRATEGY_CARD_LIMIT_PER_TEAM,
+            },
+            {
+              id: match.team_b_id,
+              name: teamBName,
+              side: "b",
+              usedCount: teamBUsedCount ?? 0,
+              limit: STRATEGY_CARD_LIMIT_PER_TEAM,
+            },
+          ]}
+          songs={(songs ?? []).map((s) => ({
+            id: s.id,
+            label: songLabelById.get(s.id) ?? `曲${s.song_number}`,
+          }))}
+          usages={(matchUsages ?? []).map((u) => ({
+            id: u.id,
+            teamId: u.team_id,
+            teamName: teamNameById.get(u.team_id) ?? "?",
+            roundLabel: u.round_label,
+            targetSongLabel: u.target_song_id
+              ? (songLabelById.get(u.target_song_id) ?? null)
+              : null,
+            note: u.note,
+          }))}
+        />
+      ),
+    },
+  ];
+
+  const tabs: TabItem[] = [
+    {
+      key: "info",
+      label: "試合情報",
+      content: <Tabs tabs={infoTabs} />,
     },
     {
       key: "rounds",
@@ -264,8 +271,22 @@ export default async function AdminMatchPage({
         <div className="flex items-start justify-between gap-2">
           <h1 className="text-xl font-bold text-foreground">
             {match.game_title.toUpperCase()} 試合詳細
+            {formatGameLabel(match.game_key) && (
+              <span className="ml-2 text-sm font-normal text-muted">
+                {formatGameLabel(match.game_key)}
+              </span>
+            )}
           </h1>
-          <DeleteMatchButton matchId={match.id} />
+          <div className="flex items-start gap-2">
+            <EditMatchToggle
+              matchId={match.id}
+              teams={allTeams ?? []}
+              initialTeamAId={match.team_a_id}
+              initialTeamBId={match.team_b_id}
+              initialStartTime={match.start_time}
+            />
+            <DeleteMatchButton matchId={match.id} />
+          </div>
         </div>
         <p className="mb-3 flex items-center gap-2 text-sm text-muted">
           開始: {new Date(match.start_time).toLocaleString("ja-JP")}
